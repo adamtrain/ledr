@@ -1,0 +1,4 @@
+    USD 100,000    Assets:Cash
+   USD -100,000    Equity:OpeningBalances
+------------------
+          USD 0

@@ -1,0 +1,9 @@
+   CAD -23.11    Assets
+       USD 20    ↩
+   CAD -23.11      B
+       USD 20      A
+    CAD 23.11    Equity:Conversions
+      USD -20    ↩
+------------------
+     CAD 0.00
+        USD 0

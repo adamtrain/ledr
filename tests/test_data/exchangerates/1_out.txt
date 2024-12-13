@@ -1,0 +1,17 @@
+
+ Base   |  Quote  |  Observed  |   Rate    | T 
+-----------------------------------------------
+EUR       MIDDLE1   2024-11-11   1.2501728   Ob
+EUR       MIDDLE1   2024-11-10   0.9991219   Ob
+EUR       MIDDLE2   2024-11-10   0.99990     In
+EUR       USD       2024-11-10   1.000000    De
+MIDDLE1   EUR       2024-11-11   0.7998894   Ob
+MIDDLE1   EUR       2024-11-10   1.0008787   Ob
+MIDDLE1   MIDDLE2   2024-11-10   0.5001757   In
+MIDDLE1   USD       2024-11-10   0.5002219   Ob
+MIDDLE2   EUR       2024-11-10   1.00009     In
+MIDDLE2   MIDDLE1   2024-11-10   1.9992974   In
+MIDDLE2   USD       2024-11-10   1.000092    Ob
+USD       EUR       2024-11-10   1.000000    De
+USD       MIDDLE1   2024-11-10   1.9991124   Ob
+USD       MIDDLE2   2024-11-10   0.999907    Ob

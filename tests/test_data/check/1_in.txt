@@ -1,0 +1,34 @@
+# Test canonical form of formatted entries per "fmt" command
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency CAD
+! 2024-11-10 currency BTC
+
+! 2024-11-10 rate BTC USD 1
+! 2024-11-10 rate BTC CAD 14
+! 2024-11-10 rate CAD USD 1
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:AR
+! 2024-11-10 account Equity:OpeningBalances
+
+2024-11-10 Initial Balance
+    Assets:Cash             1 BTC { 20,000 USD }
+    Equity:OpeningBalances
+
+2024-11-11 Sale
+    Assets:Cash             -0.5 BTC { 20,000 USD }
+    Equity:OpeningBalances
+
+2024-11-12 Buy
+    Assets:Cash           -0.1 BTC { 20,000 USD }
+    Equity:OpeningBalances 0.1 BTC { 20,000 USD }
+
+2024-11-13 Complex Sale
+    Assets:Cash           -0.1 BTC { 20,000 USD }
+    Equity:OpeningBalances 20.00 USD
+    Equity:OpeningBalances
+    
+2024-11-14 Heinous Exchange Rate
+    Assets:Cash            100 USD
+    Assets:Cash            100 CAD

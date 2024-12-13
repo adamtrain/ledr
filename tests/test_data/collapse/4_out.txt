@@ -1,0 +1,17 @@
+           ETH 20    Assets
+    USD 25,099.50    ↩
+           ETH 20      Investments
+    USD 50,100.00      ↩
+    USD 50,000.00        Boring
+       USD 100.00        Cool
+           ETH 20        Neutral
+         USD 0.00        ↩
+   USD -25,000.50      Cash
+          ETH -20    Equity
+   USD -25,099.50    ↩
+          ETH -20      OpeningBalances
+   USD -25,099.50      ↩
+         USD 0.00      Conversions
+------------------
+            ETH 0
+         USD 0.00

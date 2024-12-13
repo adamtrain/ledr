@@ -1,0 +1,5 @@
+# Checks invert, ignore equity, lenient, and precision flags
+
+2024-11-13 Single Entry
+    Assets:Cash             1234.5678 USD
+    Equity:OpeningBalances

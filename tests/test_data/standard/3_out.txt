@@ -1,0 +1,15 @@
+        BTC -1    Assets
+         ETH 1    ↩
+    USD 100.00    ↩
+    USD 100.00      Cash
+        BTC -1      Investments
+         ETH 1      ↩
+         ETH 1        ETH
+        BTC -1        BTC
+         BTC 1    Equity:Conversions
+        ETH -1    ↩
+   USD -100.00    ↩
+------------------
+         BTC 0
+         ETH 0
+      USD 0.00

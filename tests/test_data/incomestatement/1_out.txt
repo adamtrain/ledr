@@ -1,0 +1,8 @@
+       TSLA 240    Income
+   USD 3,000.00    ↩
+   USD 3,000.00      Salary
+       TSLA 240      Grants
+     USD -12.34    Expenses:Food:Restaurants
+------------------
+       TSLA 240
+   USD 2,987.66

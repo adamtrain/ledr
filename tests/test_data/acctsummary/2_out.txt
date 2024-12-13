@@ -1,0 +1,11 @@
+
+2024-11-10             Initial Cash    80,000.00   USD   
+2024-11-10   Client Will Pay in BTC            1   BTC   
+                                 ↪    -73,000.00   USD   
+             ----------------------   ----------         
+             Client Will Pay in BTC            1   BTC   
+             Client Will Pay in BTC   -73,000.00   USD   
+                       Initial Cash    80,000.00   USD   
+                                      ----------         
+                                               1   BTC   
+                                        7,000.00   USD   

@@ -1,0 +1,9 @@
+    NATGAS 321,212    Assets
+     USD 37,757.56    ↩
+    NATGAS 321,212      A
+     USD 37,757.56      B
+   NATGAS -321,212    Equity:Conversions
+    USD -37,757.56    ↩
+------------------
+          NATGAS 0
+          USD 0.00

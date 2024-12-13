@@ -1,0 +1,9 @@
+# Test that include statements work in the proper order and are
+# scanned in the first pass, not the second, for directives,
+# then in order thereafter.
+
+2024-11-10 Extra Entry
+    Assets:Cash             0.01 USD
+    Equity:OpeningBalances
+
+include tests/test_data/standard/10_in.txt

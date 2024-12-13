@@ -1,0 +1,16 @@
+# This one should be allowed, and should result in:
+#  1. +100 USD posting to Assets:Cash on the virtual entry
+#  2. The normal Equity:Conversions entries in each direction to balance the currencies
+
+! 2024-11-10 currency BTC
+! 2024-11-10 currency ETH
+! 2024-11-10 currency USD
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Investments:BTC
+! 2024-11-10 account Assets:Investments:ETH
+
+2024-11-10 ETH Buy Weird Case 0
+    Assets:Investments:ETH  1 ETH @ 3,000.00 USD
+    Assets:Investments:BTC -1 BTC @ 3,100.00 USD
+    Assets:Cash

@@ -1,0 +1,11 @@
+# Checks that multiline implicit conversion doesn't override an imbalance
+
+! 2024-11-19 currency ETH
+! 2024-11-19 currency USD
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+2024-11-19 Multiline Implicit Conversion (Mismatched)
+    Assets:A                   2 ETH @@ 2900.00 USD
+    Assets:B            -2000.00 USD

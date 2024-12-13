@@ -1,0 +1,14 @@
+        AAPL 1    Assets
+        TSLA 1    ↩
+     USD 75.00    ↩
+    USD 660.00      B
+   USD -585.00      C
+        AAPL 1      A
+        TSLA 1      ↩
+       AAPL -1    Equity:Conversions
+       TSLA -1    ↩
+    USD -75.00    ↩
+------------------
+        AAPL 0
+        TSLA 0
+      USD 0.00

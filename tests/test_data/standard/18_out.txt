@@ -1,0 +1,9 @@
+         AAPL 10    Assets
+   USD -2,340.00    ↩
+   USD -2,340.00      B
+         AAPL 10      A
+        AAPL -10    Equity:Conversions
+    USD 2,340.00    ↩
+------------------
+          AAPL 0
+        USD 0.00

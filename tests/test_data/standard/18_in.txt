@@ -1,0 +1,11 @@
+# Checks that comments can occur after other parts of a line
+
+! 2024-11-19 currency USD
+! 2024-11-19 currency AAPL # hello
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B # hey
+
+2024-11-19 Buy AAPL # sup
+    Assets:A      10 AAPL { 234.00 USD } # howdy
+    Assets:B #yo

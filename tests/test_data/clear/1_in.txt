@@ -1,0 +1,30 @@
+# Case study: drop equity that has become worthless
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency FAIL
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Options:FAIL
+! 2024-11-10 account Income:Grants
+! 2024-11-10 account Equity:OpeningBalances
+
+2024-11-10 Populate USD
+    Assets:Cash                 100,000 USD
+    Equity:OpeningBalances
+
+2024-11-10 Populate FAIL
+    Assets:Options:FAIL     100,000,000 FAIL
+    Equity:OpeningBalances
+
+# worthless is not reversible, so we don't declare it,
+# but this is a conceptually similar scenario to where
+# worthless would be used.
+
+! 2024-11-11 clear FAIL
+
+# just an artificial check outside the example here to
+# make sure FAIL can accumulate again after clear date
+
+2024-11-12 FAIL Unfails
+    Assets:Options:FAIL     45 FAIL
+    Income:Grants

@@ -1,0 +1,17 @@
+# Checks that ugl reports show unrealized gains, as is the point of such
+
+! 2024-11-19 currency USD
+! 2024-11-19 currency AAPL
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+2024-11-19 Lot to Use
+    Assets:A      203 AAPL { 832.11 USD }
+    Assets:B
+
+2024-11-21 Sell Action
+    Assets:A     -30 AAPL { 832.11 USD }
+    Assets:B
+
+! 2024-11-22 rate AAPL USD 4000

@@ -1,0 +1,43 @@
+# Currency conversion should only take declared rates
+# into account if they exist & they are the shortest
+# path between rates.
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency MIDDLE1
+! 2024-11-10 currency MIDDLE2
+! 2024-11-10 currency EUR
+
+! 2024-11-10 account Assets:USD
+! 2024-11-10 account Assets:Middle1
+! 2024-11-10 account Assets:Middle2
+! 2024-11-10 account Assets:EUR
+! 2024-11-10 account Equity:OpeningBalances
+
+! 2024-11-10 rate USD MIDDLE1 2
+! 2024-11-10 rate MIDDLE1 EUR 2
+
+2024-11-10 Test Case
+    Assets:USD                 1000.00 USD
+    Equity:OpeningBalances
+
+2024-11-10 Test Case
+    Assets:USD                  300.00 EUR
+    Equity:OpeningBalances
+
+2024-11-10 Test Case
+    Assets:Middle1              500.00 MIDDLE1
+    Assets:USD                 -250.00 USD
+
+2024-11-10 Test Case
+    // this gnarly rate gets ignored in EUR/USD conversion
+    // because it was not declared and another path was
+    Assets:Middle2               1,000,000.00 MIDDLE2
+    Assets:USD                 -2500000000.00 USD
+
+2024-11-10 Test Case
+    Assets:EUR                  100.00 EUR
+    Assets:Middle1             -100.00 MIDDLE1
+
+2024-11-10 Test Case
+    Assets:EUR                  100.00 EUR
+    Assets:Middle2             -125.00 MIDDLE2

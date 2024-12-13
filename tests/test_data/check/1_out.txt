@@ -1,0 +1,6 @@
+[2024-11-11 Sale] entry has lot sale netted against nonspecific detail, implying break-even (is this intentional?)
+[2024-11-12 Buy] entry marks the purchase of a lot as the proceeds of another (consider separating these)
+[2024-11-13 Complex Sale] entry has ambiguous proceeds from lot sale
+[2024-11-14 Heinous Exchange Rate] entry implies a negative exchange rate (is this intentional?)
+[2024-11-10]: currency conversion rates on this date are not internally consistent
+Done

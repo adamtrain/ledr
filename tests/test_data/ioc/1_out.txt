@@ -1,0 +1,5 @@
+  USD 100,000    Assets
+   USD 80,000      Investments
+   USD 20,000      Cash
+------------------
+  USD 100,000

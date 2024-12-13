@@ -1,0 +1,27 @@
+# Will ignore balances that don't convert
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency BTC
+
+! 2024-11-10 currency CAD
+! 2024-11-10 currency ETH
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Investments
+! 2024-11-10 account Equity:OpeningBalances
+
+2024-11-10 Populate USD
+    Assets:Cash             100,000 USD
+    Equity:OpeningBalances
+
+2024-11-10 Populate CAD
+    Assets:Cash             100,000 CAD
+    Equity:OpeningBalances
+
+2024-11-10 USD to BTC Over Here
+    Assets:Investments        1 BTC
+    Assets:Cash         -80,000 USD
+
+2024-11-10 CAD to ETH Over There
+    Assets:Investments        1 ETH
+    Assets:Cash          -3,000 CAD

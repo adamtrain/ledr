@@ -1,0 +1,15 @@
+! 2024-11-10 currency CAD
+! 2024-11-10 currency ETH
+! 2024-11-10 currency USD
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Investments:ETH
+
+# This one should be allowed, and should result in:
+#  1. -3000 USD posting to Assets:Cash on the virtual entry
+#  2. -3100 CAD posting to Assets:Cash on the virtual entry
+#  3. The normal Equity:Conversions entries in both directions to balance the currencies
+2024-11-10 ETH Buy Weird Case 4
+    Assets:Investments:ETH 1 ETH @ 3000.00 USD
+    Assets:Investments:ETH 1 ETH @ 3100.00 CAD
+    Assets:Cash

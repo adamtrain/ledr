@@ -1,0 +1,19 @@
+! 2024-11-10 currency ETH
+! 2024-11-10 currency USD
+
+# Nobody should have an entry like this, but it's *basically* fine.
+# The inline rate should act as though the cash account doesn't exist
+# and that one should just net normally with the virtual detail at
+# the bottom. All USD should be contained in the equity account,
+# between opening balances and conversions.
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Investments:ETH
+! 2024-11-10 account Equity:OpeningBalances
+
+! 2024-11-10 rate ETH USD 1451.00
+
+2024-11-10 ETH Buy Weird Case 5
+    Assets:Investments:ETH 2 ETH @@ 2900.00 USD
+    Assets:Cash            1 ETH
+    Equity:OpeningBalances

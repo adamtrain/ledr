@@ -1,0 +1,41 @@
+# The conversion account may accumulate conversion error if many different
+# rates are observed on the same day. Otherwise, rates are functionally
+# used as given.
+#
+# Make sure that a warning is emitted when a day does not have internally
+# consistent currency conversion data.
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency MIDDLE1
+! 2024-11-10 currency MIDDLE2
+! 2024-11-10 currency EUR
+
+! 2024-11-10 account Assets:USD
+! 2024-11-10 account Assets:Middle1
+! 2024-11-10 account Assets:Middle2
+! 2024-11-10 account Assets:EUR
+! 2024-11-10 account Equity:OpeningBalances
+
+2024-11-10 Test Case
+    Assets:USD                 1000.10 USD
+    Equity:OpeningBalances
+
+2024-11-10 Test Case
+    Assets:USD                 333.12 EUR
+    Equity:OpeningBalances
+
+2024-11-10 Test Case
+    Assets:Middle1             500.00 MIDDLE1
+    Assets:USD                -250.17 USD
+
+2024-11-10 Test Case
+    Assets:Middle2             250.00 MIDDLE2
+    Assets:USD                -250.18 USD
+
+2024-11-10 Test Case
+    Assets:EUR                     100.11 EUR
+    Assets:Middle1                -100.00 MIDDLE1
+
+2024-11-10 Test Case
+    Assets:EUR                     100.09 EUR
+    Assets:Middle2                -125.12 MIDDLE2

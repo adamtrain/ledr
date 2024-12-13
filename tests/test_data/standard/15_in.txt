@@ -1,0 +1,18 @@
+# Checks that declared rates on different days are allowed to conflict
+
+! 2024-11-19 currency USD
+! 2024-11-19 currency CAD
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+! 2024-11-19 rate USD CAD 1
+! 2024-11-20 rate USD CAD 2
+
+2024-11-19 Entry
+    Assets:A       200000 CAD
+    Assets:B      -200000 USD
+
+2024-11-20 Entry
+    Assets:A       400000 CAD
+    Assets:B      -200000 USD

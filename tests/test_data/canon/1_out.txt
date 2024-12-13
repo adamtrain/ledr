@@ -1,0 +1,8 @@
+2024-11-10 Initial Cash
+	// Hello this is a very long line and it will cut off. I want to make
+	// sure it gets line-broken automatically at the appropriate time and in
+	// the appropriate way!!!!!!!!!
+	Assets:Cash              10,000.00 USD
+	Assets:AR                 3,000.00 USD
+	Equity:OpeningBalances  -13,000.00 USD
+
