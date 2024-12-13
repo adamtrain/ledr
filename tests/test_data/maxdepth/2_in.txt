@@ -1,0 +1,17 @@
+# Condensing does something if the max_depth < existing depth
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency BTC
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:AR:Example:Deep
+! 2024-11-10 account Assets:AR:Example2:Deep
+! 2024-11-10 account Equity:OpeningBalances
+
+! 2024-11-10 rate BTC USD 50000
+
+2024-11-10 Many Initial Balances Case
+    Assets:Cash 10,000 USD
+    Assets:AR:Example:Deep 2000.00 USD
+    Assets:AR:Example2:Deep 3.00 BTC
+    Equity:OpeningBalances

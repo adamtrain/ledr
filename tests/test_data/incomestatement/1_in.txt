@@ -1,0 +1,31 @@
+# Case study: drop equity that has become worthless
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency TSLA
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Options:TSLA
+! 2024-11-10 account Equity:OpeningBalances
+! 2024-11-10 account Income:Salary
+! 2024-11-10 account Income:Grants
+! 2024-11-10 account Expenses:Food:Restaurants
+
+2024-11-10 Populate USD
+    Assets:Cash                 100,000 USD
+    Equity:OpeningBalances
+
+2024-11-10 Populate CAD
+    Assets:Cash                 100,000 USD
+    Equity:OpeningBalances
+
+2024-11-12 Paycheck
+    Assets:Cash                 3000.00 USD
+    Income:Salary
+
+2024-11-12 Option Grant
+    Assets:Options:TSLA            240 TSLA
+    Income:Grants
+
+2024-11-12 Subway
+    Expenses:Food:Restaurants    12.34 USD
+    Assets:Cash

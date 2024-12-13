@@ -1,0 +1,16 @@
+! 2024-11-10 currency USD
+! 2024-11-10 currency BTC
+! 2024-11-10 currency ETH
+
+! 2024-11-10 account Assets:Investments:ETH
+! 2024-11-10 account Assets:Cash
+
+# Test multiline implicit currency conversion
+
+2024-11-10 Multiline Implicit Conversion (With Inline Rate)
+    Assets:Investments:ETH        2 ETH @@ 2900.00 USD
+    Assets:Cash            -2900.00 USD
+
+2024-11-10 Multiline Implicit Conversion (Normal)
+    Assets:Investments:ETH        2 BTC
+    Assets:Cash           -80000.00 USD

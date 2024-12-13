@@ -1,0 +1,17 @@
+# Test that multi-currency summaries look good
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency BTC
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:AR
+! 2024-11-10 account Equity:OpeningBalances
+
+2024-11-10 Initial Cash
+    Assets:Cash             10,000 USD
+    Assets:AR               80000.00 USD
+    Equity:OpeningBalances
+
+2024-11-10 Client Will Pay in BTC
+    Assets:AR              -73,000 USD
+    Assets:AR               1 BTC

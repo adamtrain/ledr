@@ -1,0 +1,8 @@
+        FAIL 45    Assets
+    USD 100,000    ↩
+    USD 100,000      Cash
+        FAIL 45      Options:FAIL
+   USD -100,000    Equity:OpeningBalances
+------------------
+        FAIL 45
+          USD 0

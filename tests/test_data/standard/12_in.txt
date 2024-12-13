@@ -1,0 +1,14 @@
+# Checks that indicating an inline rate implies you have
+# done a conversion, so in isolation, that detail should
+# execute the conversion and cause solely an imbalance in
+# the inline conversion currency
+
+! 2024-11-19 currency CAD
+! 2024-11-19 currency ETH
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+2024-11-19 Entry
+Assets:A  1 ETH @ 20 CAD
+Assets:B -20 CAD

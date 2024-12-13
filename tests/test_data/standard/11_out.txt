@@ -1,0 +1,14 @@
+           ETH 3    Assets
+        USD 0.01    ↩
+           ETH 2      Investments:ETH
+           ETH 1      Cash
+        USD 0.01      ↩
+          ETH -3    Equity
+       USD -0.01    ↩
+          ETH -1      OpeningBalances
+   USD -2,900.01      ↩
+          ETH -2      Conversions
+    USD 2,900.00      ↩
+------------------
+           ETH 0
+        USD 0.00

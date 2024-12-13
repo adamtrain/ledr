@@ -1,0 +1,24 @@
+# Checks that currencies are deterministically sorted in report
+
+! 2024-11-19 currency USD
+! 2024-11-19 currency CAD
+! 2024-11-19 currency AAPL
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+2024-11-19 Lot to Use
+    Assets:A      203 AAPL { 832.11 USD }
+    Assets:B
+
+2024-11-21 Sell Action
+    Assets:A     -30 AAPL { 832.11 USD }
+    Assets:B
+
+2024-11-19 Lot to Use
+    Assets:A      203 AAPL { 1001.11 CAD }
+    Assets:B
+
+2024-11-21 Sell Action
+    Assets:A     -30 AAPL { 1001.11 CAD }
+    Assets:B

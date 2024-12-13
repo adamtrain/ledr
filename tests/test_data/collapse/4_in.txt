@@ -1,0 +1,23 @@
+# If there's an entry with an inline rate, then that should create an inferred
+# rate, and the remaining line items would be implicitly converted.
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency BTC
+! 2024-11-10 currency DOGE
+! 2024-11-10 currency ETH
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Investments:Cool
+! 2024-11-10 account Assets:Investments:Boring
+! 2024-11-10 account Assets:Investments:Neutral
+! 2024-11-10 account Equity:OpeningBalances
+
+# DOGE and BTC should collapse into USD at their respective rates, and
+# ETH should be shown in the report without collapsing into USD.
+
+2024-11-10 Test Case
+    Assets:Investments:Cool     10,000 DOGE @ 0.01 USD
+    Assets:Investments:Boring        1 BTC  @ 50000 USD
+    Assets:Investments:Neutral      20 ETH
+    Assets:Cash              -25000.50 USD
+    Equity:OpeningBalances

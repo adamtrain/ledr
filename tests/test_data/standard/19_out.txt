@@ -1,0 +1,6 @@
+     USD 0    Assets
+    USD 30      A
+   USD -20      B
+   USD -10      C
+------------------
+     USD 0

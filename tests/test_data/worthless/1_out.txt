@@ -1,0 +1,8 @@
+     USD 20,000    Assets
+     USD 20,000      Cash
+          USD 0      Investments
+    USD -20,000    Equity
+   USD -100,000      OpeningBalances
+     USD 80,000      Conversions
+------------------
+          USD 0

@@ -1,0 +1,25 @@
+# Checks that indirect exchange rates are working
+
+! 2024-11-10 currency SHCN
+! 2024-11-10 currency ETH
+! 2024-11-10 currency USD
+
+! 2024-11-10 account Assets:Investments:Questionable
+! 2024-11-10 account Assets:Investments:ETH
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Equity:OpeningBalances
+
+! 2024-11-10 rate ETH USD 2000
+
+2024-11-10 Part Zero
+    Assets:Cash             3000.00 USD
+    Equity:OpeningBalances
+
+2024-11-10 Part One
+    Assets:Investments:ETH        1 ETH
+    Assets:Cash            -2000.00 USD
+
+2024-11-10 Part Two
+    Assets:Investments:Questionable  343,000,000 SHCN
+    Assets:Investments:ETH                    -1 ETH
+

@@ -1,0 +1,25 @@
+# Checks that proceeds are handled reasonably with profit and loss sales
+
+! 2024-11-19 currency AAPL
+! 2024-11-19 currency TSLA
+! 2024-11-19 currency USD
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+! 2024-11-19 account Assets:C
+
+2024-11-19 Buy AAPL
+    Assets:A      10 AAPL { 234.00 USD }
+    Assets:B
+
+2024-11-19 Buy TSLA
+    Assets:A     5 TSLA { 477.00 USD }
+    Assets:C
+
+2024-11-20 Sell AAPL at a Profit
+    Assets:A      -9 AAPL { 234.00 USD }
+    Assets:B       3000.00 USD
+
+2024-11-21 Sell TSLA at a Loss
+    Assets:A     -4 TSLA { 477.00 USD }
+    Assets:C     1800.00 USD

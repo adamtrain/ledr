@@ -1,0 +1,11 @@
+# Checks that you cannot sell a lot you do not have
+
+! 2024-11-19 currency AAPL
+! 2024-11-19 currency USD
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+2024-11-19 Entry
+    Assets:A     -21 AAPL { 456.78 USD }
+    Assets:B

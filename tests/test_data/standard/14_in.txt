@@ -1,0 +1,19 @@
+# Checks that negative cost bases are allowed and work.
+# Although it feels absurd, there are sometimes real
+# commodities purchased for less than $0. For example,
+# the price of surplus natural gas sometimes dips below
+# zero.
+
+! 2024-11-19 currency NATGAS
+! 2024-11-19 currency USD
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+2024-11-19 Entry
+    Assets:A       200000 NATGAS @ -0.11 USD
+    Assets:B     22000.00 USD
+
+2024-11-19 Entry
+    Assets:A       121212 NATGAS @ -0.13 USD
+    Assets:B

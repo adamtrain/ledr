@@ -1,0 +1,13 @@
+   CAD -3,100.00    Assets
+           ETH 2    ↩
+   USD -3,000.00    ↩
+   CAD -3,100.00      Cash
+   USD -3,000.00      ↩
+           ETH 2      Investments:ETH
+    CAD 3,100.00    Equity:Conversions
+          ETH -2    ↩
+    USD 3,000.00    ↩
+------------------
+        CAD 0.00
+           ETH 0
+        USD 0.00

@@ -1,0 +1,12 @@
+# Checks that multiple virtual details are disallowed
+
+! 2024-11-19 currency USD
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+! 2024-11-19 account Assets:C
+
+2024-11-19 Two Virtual Details
+    Assets:A                   1 USD
+    Assets:B
+    Assets:C

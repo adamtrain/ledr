@@ -1,0 +1,9 @@
+   CAD -20    Assets
+     ETH 1    ↩
+   CAD -20      B
+     ETH 1      A
+    CAD 20    Equity:Conversions
+    ETH -1    ↩
+------------------
+     CAD 0
+     ETH 0

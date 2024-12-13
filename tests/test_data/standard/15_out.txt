@@ -1,0 +1,9 @@
+    CAD 600,000    Assets
+   USD -400,000    ↩
+    CAD 600,000      A
+   USD -400,000      B
+   CAD -600,000    Equity:Conversions
+    USD 400,000    ↩
+------------------
+          CAD 0
+          USD 0

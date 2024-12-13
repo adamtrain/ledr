@@ -1,0 +1,6 @@
+    USD 13,000.00    Assets
+    USD 10,000.00      Cash
+     USD 3,000.00      AR
+   USD -13,000.00    Equity:OpeningBalances
+------------------
+         USD 0.00

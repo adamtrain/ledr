@@ -1,0 +1,24 @@
+# Checks variant of first test with other entry
+
+! 2024-11-19 currency USD
+! 2024-11-19 currency CAD
+! 2024-11-19 currency AAPL
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+2024-11-19 Lot to Leave Alone
+    Assets:A      203 AAPL { 832.11 USD }
+    Assets:B
+
+2024-11-20 Lot to Sell From
+    Assets:A      54 AAPL { 832.11 USD "sell from here" }
+    Assets:B
+
+2024-11-21 Other Thing
+    Assets:A    1000 USD
+    Assets:B   -1400 CAD
+
+2024-11-21 Sell Action
+    Assets:A     -30 AAPL { 832.11 USD "sell from here" }
+    Assets:B   10000.00 CAD

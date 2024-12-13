@@ -1,0 +1,13 @@
+# Checks that there is no visible rounding effect
+# From a conversion declared inline with a total
+# with inexact rounding.
+
+! 2024-11-19 currency CAD
+! 2024-11-19 currency USD
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 account Assets:B
+
+2024-11-19 Entry
+Assets:A       20 USD @@ 23.11 CAD
+Assets:B   -23.11 CAD

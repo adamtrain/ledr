@@ -1,0 +1,19 @@
+# Weird conversions yield weird corrections, but should balance
+
+! 2024-11-10 currency USD
+! 2024-11-10 currency BTC
+! 2024-11-10 currency DOGE
+! 2024-11-10 currency ETH
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Investments:Cool
+! 2024-11-10 account Assets:Investments:Boring
+! 2024-11-10 account Assets:Investments:Neutral
+! 2024-11-10 account Equity:OpeningBalances
+
+2024-11-10 Test Case
+    Assets:Investments:Cool    100,419 DOGE @ 0.01 USD
+    Assets:Investments:Boring   1.1912 BTC  @ 50000 USD
+    Assets:Investments:Neutral   20.11 ETH
+    Assets:Cash              -25000.50 USD
+    Equity:OpeningBalances

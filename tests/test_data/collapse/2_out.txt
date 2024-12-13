@@ -1,0 +1,8 @@
+    USD 162,997.00    Assets
+    USD 102,998.00      AR
+     USD 59,999.00      Cash
+   USD -162,997.00    Equity
+   USD -162,997.00      OpeningBalances
+          USD 0.00      Conversions
+------------------
+          USD 0.00

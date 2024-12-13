@@ -1,0 +1,13 @@
+! 2024-11-10 currency ETH
+! 2024-11-10 currency USD
+
+! 2024-11-10 account Assets:AR
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Investments:ETH
+
+# This one should net the USD and add the remaining $100 cash to
+# Assets:Cash
+2024-11-10 ETH Buy Weird Case 1.5
+    Assets:Investments:ETH          1 ETH @ 2900.00 USD
+    Assets:AR               -3,000.00 USD
+    Assets:Cash

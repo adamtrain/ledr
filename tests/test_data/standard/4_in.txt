@@ -1,0 +1,14 @@
+# This one should net the USD and deduct the total $5900 imbalance from
+# Assets:Cash
+
+! 2024-11-10 currency ETH
+! 2024-11-10 currency USD
+
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:AR
+! 2024-11-10 account Assets:Investments:ETH
+
+2024-11-10 ETH Buy Weird Case 1
+    Assets:Investments:ETH        2 ETH @ 2900.00 USD
+    Assets:AR                100.00 USD
+    Assets:Cash

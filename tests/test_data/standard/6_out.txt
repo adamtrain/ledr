@@ -1,0 +1,9 @@
+           ETH 2    Assets
+   USD -6,100.00    ↩
+   USD -6,100.00      Cash
+           ETH 2      Investments:ETH
+          ETH -2    Equity:Conversions
+    USD 6,100.00    ↩
+------------------
+           ETH 0
+        USD 0.00

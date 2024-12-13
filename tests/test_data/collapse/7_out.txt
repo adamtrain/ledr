@@ -1,0 +1,17 @@
+        ETH 20.11    Assets
+    USD 35,563.69    ↩
+        ETH 20.11      Investments
+    USD 60,564.19      ↩
+    USD 59,560.00        Boring
+     USD 1,004.19        Cool
+        ETH 20.11        Neutral
+         USD 0.00        ↩
+   USD -25,000.50      Cash
+       ETH -20.11    Equity
+   USD -35,563.69    ↩
+       ETH -20.11      OpeningBalances
+   USD -35,563.69      ↩
+         USD 0.00      Conversions
+------------------
+         ETH 0.00
+         USD 0.00

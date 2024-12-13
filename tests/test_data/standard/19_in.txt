@@ -1,0 +1,25 @@
+# Checks that you can open and close an account multiple times,
+# and that you can use "open" to declare an account initially
+
+! 2024-11-19 currency USD
+
+! 2024-11-19 account Assets:A
+! 2024-11-19 open Assets:B
+! 2024-11-19 account Assets:C
+
+2024-11-19 All Open
+    Assets:A      10 USD
+    Assets:B
+
+! 2024-11-20 close Assets:B
+
+2024-11-21 B Closed
+    Assets:A      10 USD
+    Assets:C
+
+! 2024-11-22 close Assets:C
+! 2024-11-22 open Assets:B
+
+2024-11-22 B Open Again
+    Assets:A      10 USD
+    Assets:B

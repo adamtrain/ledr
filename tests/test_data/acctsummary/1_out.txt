@@ -1,0 +1,6 @@
+
+2024-11-10   Initial Cash   3,000.00   USD   Hello
+             ------------   --------              
+             Initial Cash   3,000.00   USD        
+                            --------              
+                            3,000.00   USD        
