@@ -1,4 +1,4 @@
-/* Copyright © 2024-2025 Adam Train <adam@adamtrain.net>
+/* Copyright © 2024-2025 Adam Train <adam@trainrelay.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

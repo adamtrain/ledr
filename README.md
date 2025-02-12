@@ -48,6 +48,6 @@ of the first phase of development. I am targeting Q1 2025 for general release.
 
 ## Copyright & License
 
-Copyright © 2024-2025 Adam Train <adam@adamtrain.net>
+Copyright © 2024-2025 Adam Train <adam@trainrelay.net>
 
 Ledr is licensed under the GPLv3, and will always be free.
