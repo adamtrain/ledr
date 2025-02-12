@@ -377,15 +377,8 @@ impl Graph {
 			return Some(Quant::from_i128(1));
 		}
 
-		let node = match self.nodes.get(quote) {
-			Some(node) => node,
-			None => return None,
-		};
-
-		let rate = match node.edges.get(base) {
-			Some(rate) => rate,
-			None => return None,
-		};
+		let node = self.nodes.get(quote)?;
+		let rate = node.edges.get(base)?;
 
 		if must_be_declared
 			&& rate.observation_type != ObservationType::Declared
