@@ -412,5 +412,5 @@ consult qualified financial professionals for such advice.
 
 # AUTHORS
 
-Maintained by *Adam Train <adam@adamtrain.net>*. Up-to-date source code can be
+Maintained by *Adam Train <adam@trainrelay.net>*. Up-to-date source code can be
 found at *github.com/adamexists/ledr* and contributions are accepted via GitHub.
