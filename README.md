@@ -44,7 +44,7 @@ between now and a soft open-source release will be spent on documentation
 and refinement.
 
 The completion of this documentation and refinement phase will signal the end
-of the first phase of development. I am targeting Q1 2025 for general release.
+of the first phase of development. I am targeting Q2 2025 for general release.
 
 ## Copyright & License
 
