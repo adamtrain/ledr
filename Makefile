@@ -25,8 +25,12 @@ doc:
 	scdoc < doc/ledr.5.scd > target/ledr.5
 
 install:
+	mkdir -p /usr/local/bin
+	mkdir -p /usr/local/share/man/man1
+	mkdir -p /usr/local/share/man/man5
 	install -m 755 target/release/ledr $(DESTDIR)$(BINDIR)/ledr
 	install -m 644 target/ledr.1 $(DESTDIR)$(MANDIR)/man1/ledr.1
+	install -m 644 target/ledr.5 $(DESTDIR)$(MANDIR)/man5/ledr.5
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/ledr

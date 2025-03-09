@@ -114,9 +114,9 @@ names.
 
 	! 2024-11-24 currency USD
 
-Declares that a given account exists and is open for use. The accompanying
-date indicates the first date on which the account is allowed to be used. This
-system is intended to avoid data entry mistakes, such as typos of account
+Declares that a given currency exists and is available for use. The accompanying
+date indicates the first date on which the currency is allowed to be used.
+This system is intended to avoid data entry mistakes, such as typos of currency
 names.
 
 ## open <ACCOUNT>
@@ -413,4 +413,4 @@ consult qualified financial professionals for such advice.
 # AUTHORS
 
 Maintained by *Adam Train <adam@trainrelay.net>*. Up-to-date source code can be
-found at *github.com/adamexists/ledr* and contributions are accepted via GitHub.
+found at *github.com/aetxyz/ledr* and contributions are accepted via GitHub.
