@@ -221,7 +221,7 @@ impl ExchangeRates {
 			.and_then(|rates| {
 				rates
 					.iter()
-					.find(|o| o.date.map_or(true, |d| d <= *as_of))
+					.find(|o| o.date.is_none_or(|d| d <= *as_of))
 					.map(|o| o.rate)
 			})
 	}
@@ -246,6 +246,19 @@ impl ExchangeRates {
 		};
 
 		self.resolved_rates
+	}
+}
+
+/// Helper function to determine the maximum precision between two optionals
+fn determine_precision(
+	base_precision: Option<&u32>,
+	quote_precision: Option<&u32>,
+) -> Option<u32> {
+	match (base_precision, quote_precision) {
+		(Some(&bp), Some(&qp)) => Some(bp.max(qp)),
+		(Some(&bp), None) => Some(bp),
+		(None, Some(&qp)) => Some(qp),
+		(None, None) => None,
 	}
 }
 
@@ -380,18 +393,5 @@ mod tests {
 				ObservationType::Inferred
 			)
 			.is_ok());
-	}
-}
-
-/// Helper function to determine the maximum precision between two optionals
-fn determine_precision(
-	base_precision: Option<&u32>,
-	quote_precision: Option<&u32>,
-) -> Option<u32> {
-	match (base_precision, quote_precision) {
-		(Some(&bp), Some(&qp)) => Some(bp.max(qp)),
-		(Some(&bp), None) => Some(bp),
-		(None, Some(&qp)) => Some(qp),
-		(None, None) => None,
 	}
 }
