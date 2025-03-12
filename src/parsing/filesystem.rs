@@ -48,6 +48,25 @@ impl Filesystem {
 		self.included_files.insert(file_path.parse()?);
 		Ok(())
 	}
+	
+	/// Resolves a path relative to the directory of the parent file.
+	/// If the path is absolute, it's returned as is.
+	pub fn resolve_path(&self, parent_file_path: &str, relative_path: &str) -> String {
+		let path = Path::new(relative_path);
+		if path.is_absolute() {
+			return relative_path.to_string();
+		}
+		
+		let parent_dir = Path::new(parent_file_path)
+			.parent()
+			.unwrap_or(Path::new(""));
+		
+		parent_dir
+			.join(path)
+			.to_str()
+			.unwrap_or(relative_path)
+			.to_string()
+	}
 
 	/// Fetches the config from the given path, or default path if none.
 	/// The boolean argument indicates whether it is necessary to inspect

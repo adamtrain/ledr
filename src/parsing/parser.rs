@@ -65,7 +65,7 @@ impl Parser {
 		// Second pass is responsible for assembling the ParseResult object,
 		// which we pass in this way so it can be passed recursively within.
 		let mut output: ParseResult = Default::default();
-		self.second_pass(&file, ledger, &mut output, ignore_after)?;
+		self.second_pass(&file, ledger, &mut output, ignore_after, file_path)?;
 
 		Ok(output)
 	}
@@ -110,8 +110,9 @@ impl Parser {
 					bail!("Invalid include (line {})", i)
 				}
 
-				let file = self.fs.open(include[1])?;
-				self.first_pass(include[1], &file, ledger, ignore_after)?;
+				let resolved_path = self.fs.resolve_path(path, include[1]);
+				let file = self.fs.open(&resolved_path)?;
+				self.first_pass(&resolved_path, &file, ledger, ignore_after)?;
 				continue;
 			}
 
@@ -207,6 +208,7 @@ impl Parser {
 		ledger: &mut Ledger,
 		parse_result: &mut ParseResult,
 		ignore_after: &Date,
+		current_path: &str,
 	) -> Result<(), Error> {
 		let reader = io::BufReader::new(file);
 
@@ -237,8 +239,9 @@ impl Parser {
 			if l.starts_with("include") {
 				let include: Vec<&str> = l.split_whitespace().collect();
 
-				let file = self.fs.open(include[1])?;
-				self.second_pass(&file, ledger, parse_result, ignore_after)?;
+				let resolved_path = self.fs.resolve_path(current_path, include[1]);
+				let file = self.fs.open(&resolved_path)?;
+				self.second_pass(&file, ledger, parse_result, ignore_after, &resolved_path)?;
 				continue;
 			}
 

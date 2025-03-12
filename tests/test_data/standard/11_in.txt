@@ -6,4 +6,4 @@
     Assets:Cash             0.01 USD
     Equity:OpeningBalances
 
-include tests/test_data/standard/10_in.txt
+include 10_in.txt
