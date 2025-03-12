@@ -2125,27 +2125,27 @@ mod tests {
 			let duration = Duration::from_secs(1);
 			let start_time = Instant::now();
 
-			let mut rng = rand::thread_rng();
+			let mut rng = rand::rng();
 
 			while Instant::now() - start_time < duration {
 				// Generate random numerators and denominators within i128 bounds
-				let mut numerator_a: i128 = rng.gen_range(1..10i128.pow(19));
-				let mut numerator_b: i128 = rng.gen_range(1..10i128.pow(19));
-				if rng.gen_bool(0.5) {
+				let mut numerator_a: i128 = rng.random_range(1..10i128.pow(19));
+				let mut numerator_b: i128 = rng.random_range(1..10i128.pow(19));
+				if rng.random_bool(0.5) {
 					numerator_a = -numerator_a;
 				}
-				if rng.gen_bool(0.5) {
+				if rng.random_bool(0.5) {
 					numerator_b = -numerator_b;
 				}
 
-				let denominator_a: i128 = rng.gen_range(1..10i128.pow(19));
-				let denominator_b: i128 = rng.gen_range(1..10i128.pow(19));
+				let denominator_a: i128 = rng.random_range(1..10i128.pow(19));
+				let denominator_b: i128 = rng.random_range(1..10i128.pow(19));
 
 				let quant_a = Quant::from_frac(numerator_a, denominator_a);
 				let quant_b = Quant::from_frac(numerator_b, denominator_b);
 
 				// Randomly pick an operation to perform
-				let operation: u8 = rng.gen_range(0..4); // 0: add, 1: sub, 2: mul, 3: div
+				let operation: u8 = rng.random_range(0..4); // 0: add, 1: sub, 2: mul, 3: div
 
 				let mut result = match operation {
 					0 => quant_a + quant_b,
