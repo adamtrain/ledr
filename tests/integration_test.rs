@@ -27,8 +27,7 @@ fn collect_test_cases(subfolder: &str) -> Vec<(String, String)> {
 		let mut outputs = vec![];
 
 		for entry in entries.flatten() {
-			let file_name =
-				entry.file_name().into_string().unwrap_or_default();
+			let file_name = entry.file_name().into_string().unwrap_or_default();
 			if file_name.ends_with("_in.txt") {
 				inputs.push(file_name);
 			} else if file_name.ends_with("_out.txt") {

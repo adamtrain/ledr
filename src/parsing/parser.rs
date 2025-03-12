@@ -239,9 +239,16 @@ impl Parser {
 			if l.starts_with("include") {
 				let include: Vec<&str> = l.split_whitespace().collect();
 
-				let resolved_path = self.fs.resolve_path(current_path, include[1]);
+				let resolved_path =
+					self.fs.resolve_path(current_path, include[1]);
 				let file = self.fs.open(&resolved_path)?;
-				self.second_pass(&file, ledger, parse_result, ignore_after, &resolved_path)?;
+				self.second_pass(
+					&file,
+					ledger,
+					parse_result,
+					ignore_after,
+					&resolved_path,
+				)?;
 				continue;
 			}
 
