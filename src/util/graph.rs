@@ -1204,7 +1204,7 @@ mod tests {
 
 		#[test]
 		fn test_determinism_of_conversion() {
-			let mut rng = rand::thread_rng();
+			let mut rng = rand::rng();
 			let currencies: Vec<&str> = vec![
 				"USD", "EUR", "GBP", "JPY", "AUD", "CAD", "CHF", "CNY", "INR",
 				"BTC",
@@ -1216,15 +1216,15 @@ mod tests {
 			for i in 0..num_currencies {
 				for j in (i + 1)..num_currencies {
 					let mut rate1 = Quant::from_frac(
-						rng.gen_range(1..10_000),
-						rng.gen_range(1..10_000),
+						rng.random_range(1..10_000),
+						rng.random_range(1..10_000),
 					);
 					let mut rate2 = Quant::from_frac(
-						rng.gen_range(1..10_000),
-						rng.gen_range(1..10_000),
+						rng.random_range(1..10_000),
+						rng.random_range(1..10_000),
 					);
 
-					if rng.gen_bool(0.5) {
+					if rng.random_bool(0.5) {
 						rate1 = rate1.neg();
 						rate2 = rate2.neg();
 					}
