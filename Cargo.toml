@@ -15,25 +15,25 @@
 
 [package]
 name = "ledr"
-version = "0.7.21"
+version = "2.1.1"
 authors = ["Adam Train"]
 edition = "2021"
 description = "Plain text accounting tool"
 readme = "README.md"
-repository = "https://github.com/aetxyz/ledr"
+repository = "https://github.com/adamtrain/ledr"
 license = "GPL-3"
 
 [lints.rust]
 unsafe_code = "forbid"
 
 [dependencies]
-anyhow = "1.0.93"
-chrono = "0.4.38"
-clap = { version = "4.5.21", features = ["derive"] }
-dirs = "5.0.1"
-rand = "0.9.0-alpha.2"
-regex = "1.11.1"
-reqwest = { version = "0.12.9", features = ["blocking", "json"] }
-serde = { version = "1.0.215", features = ["derive"] }
-toml = "0.8.19"
-serde_json = "1.0.133"
+anyhow = "1.0.100"
+chrono = "0.4.42"
+clap = { version = "4.5.53", features = ["derive"] }
+dirs = "6.0.0"
+rand = "0.9.0"
+regex = "1.12.2"
+reqwest = { version = "0.12.26", features = ["blocking", "json"] }
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "0.9.10"
+serde_json = "1.0.146"
