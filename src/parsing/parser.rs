@@ -107,7 +107,7 @@ impl Parser {
 			if l.starts_with("include") {
 				let include: Vec<&str> = l.split_whitespace().collect();
 				if include.len() != 2 {
-					bail!("Invalid include (line {})", i)
+					bail!("Invalid include (line {i})")
 				}
 
 				let resolved_path = self.fs.resolve_path(path, include[1]);
@@ -127,7 +127,7 @@ impl Parser {
 
 			let date_str = directive.pop_front().unwrap();
 			let date = Date::from_str(date_str.trim())
-				.map_err(|e| anyhow!("{} (line {})", e, i))?;
+				.map_err(|e| anyhow!("{e} (line {i})"))?;
 
 			if &date > ignore_after {
 				continue;
@@ -137,29 +137,29 @@ impl Parser {
 				"account" if directive.len() == 2 => {
 					let account = directive[1].to_string();
 					if !account.contains(":") {
-						bail!("Top level accounts cannot be used on their own (line {})", i);
+						bail!("Top level accounts cannot be used on their own (line {i})");
 					}
 					ledger
 						.declare_account(account, date)
-						.map_err(|e| anyhow!("{} (line {})", e, i))?;
+						.map_err(|e| anyhow!("{e} (line {i})"))?;
 				},
 				"open" if directive.len() == 2 => {
 					let account = directive[1].to_string();
 					if !account.contains(":") {
-						bail!("Top level accounts cannot be used on their own (line {})", i);
+						bail!("Top level accounts cannot be used on their own (line {i})");
 					}
 					ledger
 						.declare_account_open(account, date)
-						.map_err(|e| anyhow!("{} (line {})", e, i))?;
+						.map_err(|e| anyhow!("{e} (line {i})"))?;
 				},
 				"close" if directive.len() == 2 => {
 					let account = directive[1].to_string();
 					if !account.contains(":") {
-						bail!("Top level accounts cannot be used on their own (line {})", i);
+						bail!("Top level accounts cannot be used on their own (line {i})");
 					}
 					ledger
 						.declare_account_closure(account, date)
-						.map_err(|e| anyhow!("{} (line {})", e, i))?;
+						.map_err(|e| anyhow!("{e} (line {i})"))?;
 				},
 				"clear" if directive.len() == 2 => {
 					let currency = directive[1].to_string();
@@ -169,7 +169,7 @@ impl Parser {
 					let currency = directive[1].to_string();
 					ledger
 						.declare_currency(&currency, date)
-						.map_err(|e| anyhow!("{} (line {})", e, i))?;
+						.map_err(|e| anyhow!("{e} (line {i})"))?;
 				},
 				"rate" if directive.len() == 4 => {
 					let from = directive[1].to_string();
@@ -182,10 +182,10 @@ impl Parser {
 							from,
 							to,
 							Quant::from_str(rate)
-								.map_err(|e| anyhow!("{} (line {})", e, i))?,
+								.map_err(|e| anyhow!("{e} (line {i})"))?,
 							ObservationType::Declared,
 						)
-						.map_err(|e| anyhow!("{} (line {})", e, i))?;
+						.map_err(|e| anyhow!("{e} (line {i})"))?;
 				},
 				"worthless" if directive.len() == 2 => {
 					let currency = directive[1].to_string();
@@ -229,7 +229,7 @@ impl Parser {
 			if l.is_empty() {
 				ledger
 					.finish_entry()
-					.map_err(|e| anyhow!("{} (line {})", e, i))?;
+					.map_err(|e| anyhow!("{e} (line {i})"))?;
 				continue;
 			}
 
@@ -283,7 +283,7 @@ impl Parser {
 							desc.trim().to_string(),
 							self.entry_count,
 						)
-						.map_err(|e| anyhow!("{} (line {})", e, i))?;
+						.map_err(|e| anyhow!("{e} (line {i})"))?;
 
 					self.entry_count += 1;
 
@@ -294,7 +294,7 @@ impl Parser {
 
 			// Make sure the line is not a date by itself
 			if Date::from_str(&l).is_ok() {
-				bail!("Orphaned date (line {}): {}", i, l);
+				bail!("Orphaned date (line {i}): {l}");
 			}
 
 			if ignore_until_next_entry {
@@ -309,7 +309,7 @@ impl Parser {
 				let account = parts[0].clone();
 				ledger
 					.set_virtual_detail(account)
-					.map_err(|e| anyhow!("{} (line {})", e, i))?;
+					.map_err(|e| anyhow!("{e} (line {i})"))?;
 				continue;
 			}
 
@@ -324,17 +324,17 @@ impl Parser {
 				// no inline conversion
 				3 => ledger
 					.add_detail(account, amount, None, None, None)
-					.map_err(|e| anyhow!("{} (line {})", e, i))?,
+					.map_err(|e| anyhow!("{e} (line {i})"))?,
 				6 => {
 					// inline conversion, i.e. `@ 20.00 USD`
 					let is_total_cost = match parts[3].as_str() {
 						"@" => false,
 						"@@" => true,
-						_ => bail!("Invalid format (line {})", i),
+						_ => bail!("Invalid format (line {i})"),
 					};
 
 					let mut ic_amount = Quant::from_str(parts[4].as_str())
-						.map_err(|_| anyhow!("Invalid value (line {})", i))?;
+						.map_err(|_| anyhow!("Invalid value (line {i})"))?;
 					let ic_currency = parts[5].to_string();
 
 					parse_result.note_precision(
@@ -354,17 +354,17 @@ impl Parser {
 							None,
 							None,
 						)
-						.map_err(|e| anyhow!("{} (line {})", e, i))?
+						.map_err(|e| anyhow!("{e} (line {i})"))?
 				},
 				7 | 8 => {
 					// lot declaration, i.e. `{ 20.00 USD }`
 					if parts[3] != "{" || parts.last().unwrap() != "}" {
-						bail!("Invalid format (line {})", i);
+						bail!("Invalid format (line {i})");
 					}
 
 					// Grab cost basis
 					let cb_amount = Quant::from_str(parts[4].as_str())
-						.map_err(|_| anyhow!("Invalid value (line {})", i))?;
+						.map_err(|_| anyhow!("Invalid value (line {i})"))?;
 					let cb_currency = parts[5].to_string();
 
 					parse_result.note_precision(
@@ -398,16 +398,16 @@ impl Parser {
 							}),
 							lot_name,
 						)
-						.map_err(|e| anyhow!("{} (line {})", e, i))?
+						.map_err(|e| anyhow!("{e} (line {i})"))?
 				},
-				_ => bail!("Invalid format (line {})", i),
+				_ => bail!("Invalid format (line {i})"),
 			}
 		}
 
 		// Make sure to finish the last entry if the file ends without an empty line
 		ledger
 			.finish_entry()
-			.map_err(|e| anyhow!("{} (line eof)", e))?;
+			.map_err(|e| anyhow!("{e} (line eof)"))?;
 
 		Ok(())
 	}

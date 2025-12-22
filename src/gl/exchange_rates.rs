@@ -153,7 +153,7 @@ impl ExchangeRates {
 
 		for (date, graph) in &self.daily_graphs {
 			if self.allow_warnings && graph.has_inconsistent_cycle() {
-				println!("[{}]: currency conversion rates on this date are not internally consistent", date);
+				println!("[{date}]: currency conversion rates on this date are not internally consistent");
 			}
 
 			// Make sure exchange rates inherit desired precision from user

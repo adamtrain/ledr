@@ -118,7 +118,7 @@ impl Table {
 				print!("{:<width$}", value, width = max_widths[i]);
 			}
 			if i < data_row.len() - 1 {
-				print!("{}", separator);
+				print!("{separator}");
 			}
 		}
 		println!();
@@ -132,9 +132,9 @@ impl Table {
 	) {
 		for (i, value) in data_row.iter().enumerate() {
 			let centered_value = Table::center_align(value, max_widths[i]);
-			print!("{}", centered_value);
+			print!("{centered_value}");
 			if i < data_row.len() - 1 {
-				print!("{}", separator);
+				print!("{separator}");
 			}
 		}
 		println!();

@@ -147,7 +147,7 @@ impl Quant {
 		let remainder = scaled_numerator % self.denominator;
 
 		// Perform Banker's rounding
-		let half_denom = (self.denominator + 1) / 2;
+		let half_denom = self.denominator.div_ceil(2);
 		let rounded_quotient = if remainder > half_denom
 			|| (remainder == half_denom && quotient % 2 != 0)
 		{
@@ -300,13 +300,13 @@ impl fmt::Display for Quant {
 		let formatted = if fraction_str.is_empty() {
 			int_str
 		} else {
-			format!("{}.{}", int_str, fraction_str)
+			format!("{int_str}.{fraction_str}")
 		};
 
 		if self.is_negative {
-			write!(f, "-{}", formatted)
+			write!(f, "-{formatted}")
 		} else {
-			write!(f, "{}", formatted)
+			write!(f, "{formatted}")
 		}
 	}
 }

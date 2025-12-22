@@ -151,11 +151,9 @@ question the given number is answering is "How many of the quote currency does
 it take to buy one of the base asset?" Thus, the above example declares that 1
 USD is equal to 1.3 CAD.
 
-A declared rate is presumed to be accurate on the date it occurs, and if a
-transaction implies an exchange rate that differs more than 5% from a declared
-rate on that date, *ledr* will complain and stop processing with an error. You
-cannot declare more than one rate between the same pair of currencies on the
-same date.
+A declared rate is presumed to be accurate on the date it occurs. You cannot
+declare more than one rate between the same pair of currencies on the same
+date.
 
 A rate directive is generally used to clarify the current value of an asset or
 currency that you hold but have not transacted with recently, such as long-term
@@ -400,8 +398,6 @@ _ledr_(1) - general reference
 
 _ledr_(7) - data integrity guidance, further discussion of lot management and
 currency conversion
-
-_ledr-import_(1) - ledger transaction importer documentation
 
 # DISCLAIMER
 

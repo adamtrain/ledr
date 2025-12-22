@@ -16,22 +16,13 @@ accounts. These movements may be actual (i.e. the purchase of goods) or
 abstract (i.e. the appropriation of funds for a specific purpose). In other
 words, it is a reporting tool from a text-based *general ledger*.
 
-In addition to this primary function, *ledr* contains an importer that can
-pull transactions from external financial systems into a specified text file
-in the proper format. At time of writing, the only import target is Mercury,
-the financial services firm in the United States. This makes *ledr* highly
-suited to those individuals and companies whose primary banking is done there.
-Additional importers may exist in the future.
-
 *ledr* contains a number of modules for different purposes. The three
 categories of modules are (1) financial statements; (2) lot reports, and (3)
 auxiliary functions. Each is described below in turn. All of these expect
 an input file in the _ledr_(5) format. A number of configuration options also
 exist to modify the display of reports.
 
-With the exception of the _import_ command, *ledr* is solely a read-only tool,
-and does not modify files. The _import_ command is only capable of appending
-to the end of the file it targets.
+*ledr* is solely a read-only tool, and does not modify files.
 
 # FINANCIAL STATEMENTS
 
@@ -129,10 +120,6 @@ for relate to lot management and currency conversion. Additional functions of
 this command are a useful point of feedback. The intention is for it to provide
 a useful way to validate a ledger file's data accuracy.
 
-## ledr import
-
-Import command. For documentation on this command, consult _ledr-import_(1).
-
 # FLAGS
 
 Almost all *ledr* commands support flags to modify their behavior in useful
@@ -152,15 +139,6 @@ reports such as unrealized capital gains and losses.
 Ignore entries after the given date. Always respected. This allows you to
 produce any report as though you were processing the ledger on a specific date
 in the past.
-
-## --config <CONFIG>
-
-Indicate a custom config file location. The default is
-_~/.config/ledr/config.toml_. The config file is only used for the *import*
-command, and is otherwise ignored. You can safely ignore this flag if you don't
-intend to use the importer.
-
-For more details, first consult _ledr-import_(1).
 
 ## -c <SYMBOL> / --currency <SYMBOL>
 
@@ -339,6 +317,18 @@ capital gains and losses over a given interval, or one's current financial
 position. (On this matter, please see the Disclaimer at the bottom of this
 document.)
 
+When multiple lot transactions occur on the same date, all buys are processed
+before all sells. This ensures that lots purchased on a given date are available
+for sale on that same date.
+
+Short positions are supported via negative cost basis. If you wish to track a
+short position, record it as a lot with a negative cost basis value.
+
+For accurate proceeds tracking in lot reports, it is best practice to record
+each lot sale as an isolated entry with just the sale line and the proceeds.
+This allows *ledr* to unambiguously determine the proceeds for capital gains
+calculations.
+
 For further details on the syntax required to declare and assign a name to a
 lot, consult _ledr_(5).
 
@@ -374,8 +364,6 @@ _ledr_(5) - general ledger file format
 _ledr_(7) - data integrity guidance, further discussion of lot management and
 currency conversion
 
-_ledr-import_(1) - ledger transaction importer documentation
-
 # DISCLAIMER
 
 *ledr*'s maintainers are not financial experts and *ledr* is not a substitute
@@ -387,36 +375,3 @@ consult qualified financial professionals for such advice.
 
 Maintained by *Adam Train <adam@usdocument.org>*. Up-to-date source code can be
 found at *github.com/aetxyz/ledr* and contributions are accepted via GitHub.
-
-# FIN
-
-Here's what this doc should contain in the future:
-
-- If multiple lots are reported at the same date, all buys are assumed to
-  come before all sells. Logic with lots is FIFO by default.
-- Include instructions are not directives. They have different syntax. It
-  is best practice to use fully qualified paths with them, else it'll be
-  relative to the current working directory. Document all directives too.
-- If two or more implicit exchange rates are inferred from the same date,
-  each will be averaged.
-- If you want to short something, then that's a lot with a negative cost basis
-- We allow for entries that may not make sense at first glance, like if there
-  are two lines in different currencies that are both positive. This actually
-  implies a negative exchange rate between the two currencies, as ledr will
-  force the two lines to balance. This is useless for most people, but it
-  makes sense in cases like shorting a stock (keeping track of your shorted
-  share counts), so we allow it.
-- If you are using ledr to track lots, you are highly encouraged to record
-  sale transactions individually, so the proceeds from them can be
-  automatically tracked for reports. If you do not isolate these with just
-  one line item (the proceeds from sale), then some lot reports will not
-  contain complete information.
-- Generally establish that directives bind input, i.e. that a rate directive,
-  for example, will make ledr reject input that deviates too far from it on
-  that date.
-- Entries are processed in the order they are written in the file, taking
-  account of directives (all processed first) and include statements (which
-  halt in the current file and process the next). Describe the control flow.
-- Describe how highly different currency conversions on the same day can yield
-  unexpected results and significant conversion error. Also, describe rounding
-  error in similar form.

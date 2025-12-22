@@ -192,7 +192,7 @@ impl StatementReporter {
 		let mut max_width = 0;
 
 		let calculate_width = |currency: &String, amount: &Quant| {
-			format!("{} {}", currency, amount).len()
+			format!("{currency} {amount}").len()
 		};
 
 		// Check the width of all amounts in this OrderedTotal
@@ -263,7 +263,7 @@ impl StatementReporter {
 				// consecutive lines, replace it with a symbol
 				let acct = match (has_printed_acct, amts.peek().is_some()) {
 					(true, _) => " ↩",
-					_ => &*format!(" {}", account_name),
+					_ => &*format!(" {account_name}"),
 				};
 
 				println!(

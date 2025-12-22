@@ -16,7 +16,6 @@
 use crate::gl::total::Total;
 use crate::investment::lot::LotStatus;
 use crate::investment::portfolio::{LotFilter, Portfolio};
-use crate::parsing::filesystem::Filesystem;
 use crate::parsing::parser::ParseResult;
 use crate::reports::ledger_reporter::LedgerReporter;
 use crate::reports::portfolio_reporter::PortfolioReporter;
@@ -30,9 +29,7 @@ use gl::ledger::Ledger;
 use std::cmp::PartialEq;
 use std::collections::BTreeMap;
 
-mod config;
 mod gl;
-mod import;
 mod investment;
 mod parsing;
 mod reports;
@@ -65,10 +62,6 @@ struct Cli {
 	/// Ignore entries after this date (YYYY-MM-DD)
 	#[arg(short, long)]
 	end: Option<String>,
-
-	/// Custom config file location (default: ~/.config/ledr/config.toml)
-	#[arg(long)]
-	config: Option<String>,
 
 	/// Convert all possible balances to this currency
 	#[arg(short, long)]
@@ -132,8 +125,6 @@ enum Directive {
 	Find, // search for entries by description
 
 	Check, // find possible data integrity concerns
-
-	Import, // import data from specific targets
 }
 
 fn main() -> Result<(), Error> {
@@ -141,7 +132,6 @@ fn main() -> Result<(), Error> {
 	args.validate()?;
 
 	let (begin, end) = get_range(&args)?;
-	let fs = Filesystem::new();
 
 	let mut ledger =
 		Ledger::new(args.lenient, args.command == Directive::Check);
@@ -225,12 +215,6 @@ fn main() -> Result<(), Error> {
 		Directive::Check => {
 			// simple log; warnings occur dynamically throughout processing
 			println!("Done");
-		},
-		Directive::Import => {
-			// Right now, only this command inspects config in any way, so we
-			// don't bother to check for it or parse it until this point
-			let config = fs.get_config(args.config.as_ref(), true)?;
-			import::importer::import(config, args, ledger)?;
 		},
 	}
 
@@ -316,17 +300,11 @@ fn ledger_to_totals(
 }
 
 fn get_range(args: &Cli) -> Result<(Date, Date), Error> {
-	let mut begin = Date::from_str(
+	let begin = Date::from_str(
 		args.begin.as_ref().unwrap_or(&Date::min().to_string()),
 	)?;
 	let end =
 		Date::from_str(args.end.as_ref().unwrap_or(&Date::max().to_string()))?;
-
-	// for importing, we want to use the entire ledger up to that point for
-	// account matching
-	if args.command == Directive::Import {
-		begin = Date::min();
-	}
 
 	Ok((begin, end))
 }

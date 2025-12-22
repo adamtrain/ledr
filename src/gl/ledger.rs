@@ -95,7 +95,7 @@ impl Ledger {
 		}
 
 		if self.declared_currencies.contains_key(currency) {
-			bail!("Currency {} declared twice", currency)
+			bail!("Currency {currency} declared twice")
 		}
 
 		self.declared_currencies.insert(currency.to_string(), date);
@@ -113,7 +113,7 @@ impl Ledger {
 		}
 
 		if self.declared_accounts.contains_key(&account) {
-			bail!("Account {} declared twice", account)
+			bail!("Account {account} declared twice")
 		}
 
 		let mut declaration = Declaration::new();
@@ -207,7 +207,7 @@ impl Ledger {
 			.iter()
 			.any(|&prefix| account.starts_with(prefix));
 		if !has_valid_prefix {
-			bail!("Invalid account prefix: {}", account)
+			bail!("Invalid account prefix: {account}")
 		}
 
 		let pending_entry = self.pending_entry.as_mut().unwrap();
@@ -314,15 +314,11 @@ impl Ledger {
 	fn check_currency(&self, currency: &str) -> Result<(), Error> {
 		let declaration_date = match self.declared_currencies.get(currency) {
 			Some(d) => d,
-			None => bail!("Currency {} used without declaration", currency),
+			None => bail!("Currency {currency} used without declaration"),
 		};
 
 		if self.pending_entry.as_ref().unwrap().get_date() < declaration_date {
-			bail!(
-				"Currency {} used prior to declaration on {}",
-				currency,
-				declaration_date
-			)
+			bail!("Currency {currency} used prior to declaration on {declaration_date}")
 		}
 
 		Ok(())
@@ -334,13 +330,13 @@ impl Ledger {
 	fn check_account(&self, account: &String) -> Result<(), Error> {
 		let declaration = match self.declared_accounts.get(account) {
 			Some(d) => d,
-			None => bail!("Account {} used without declaration", account),
+			None => bail!("Account {account} used without declaration"),
 		};
 
 		if !declaration
 			.is_open_on(self.pending_entry.as_ref().unwrap().get_date())
 		{
-			bail!("Account {} is not open", account)
+			bail!("Account {account} is not open")
 		}
 
 		Ok(())
@@ -419,7 +415,7 @@ impl Ledger {
 			}
 
 			if entry.get_date() >= begin {
-				println!("{}", entry);
+				println!("{entry}");
 			}
 		}
 	}

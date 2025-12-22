@@ -23,18 +23,23 @@ doc:
 	mkdir -p target
 	scdoc < doc/ledr.1.scd > target/ledr.1
 	scdoc < doc/ledr.5.scd > target/ledr.5
+	scdoc < doc/ledr.7.scd > target/ledr.7
 
 install:
 	mkdir -p /usr/local/bin
 	mkdir -p /usr/local/share/man/man1
 	mkdir -p /usr/local/share/man/man5
+	mkdir -p /usr/local/share/man/man7
 	install -m 755 target/release/ledr $(DESTDIR)$(BINDIR)/ledr
 	install -m 644 target/ledr.1 $(DESTDIR)$(MANDIR)/man1/ledr.1
 	install -m 644 target/ledr.5 $(DESTDIR)$(MANDIR)/man5/ledr.5
+	install -m 644 target/ledr.7 $(DESTDIR)$(MANDIR)/man7/ledr.7
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/ledr
 	rm -f $(DESTDIR)$(MANDIR)/man1/ledr.1
+	rm -f $(DESTDIR)$(MANDIR)/man5/ledr.5
+	rm -f $(DESTDIR)$(MANDIR)/man7/ledr.7
 
 # Reports .rs files that do not have a GPLv3 header
 check-gpl:
@@ -45,16 +50,12 @@ check-gpl:
 	fi
 	@echo "All good"
 
-# Create a GitHub release with cross-compiled binaries
-# Usage: make release TAG=v0.7.22
-# Prerequisites:
-#   - gh CLI (authenticated)
-#   - cargo-zigbuild (cargo install cargo-zigbuild)
-#   - zig (brew install zig)
-#   - rustup target add aarch64-apple-darwin x86_64-unknown-linux-gnu
+# Create a GitHub release with macOS arm64 binary
+# Usage: make release TAG=v1.0.0
+# Prerequisites: gh CLI (authenticated)
 release:
 ifndef TAG
-	$(error TAG is required. Usage: make release TAG=v0.7.22)
+	$(error TAG is required. Usage: make release TAG=v1.0.0)
 endif
 	@if ! echo "$(TAG)" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?$$'; then \
 		echo "Error: TAG must be lowercase 'v' followed by valid semver (e.g., v1.2.3)"; \
@@ -78,22 +79,16 @@ endif
 	$(MAKE) test
 	@echo "Building documentation..."
 	$(MAKE) doc
-	@echo "Building macOS arm64 binary..."
-	cargo zigbuild --release --target aarch64-apple-darwin
-	@echo "Building Linux amd64 binary..."
-	cargo zigbuild --release --target x86_64-unknown-linux-gnu
+	@echo "Building release binary..."
+	cargo build --release
 	@echo "Packaging artifacts..."
 	mkdir -p target/release-pkg
 	tar -czvf target/release-pkg/ledr-$(TAG)-darwin-arm64.tar.gz \
-		-C target/aarch64-apple-darwin/release ledr \
-		-C $(CURDIR)/target ledr.1 ledr.5
-	tar -czvf target/release-pkg/ledr-$(TAG)-linux-amd64.tar.gz \
-		-C target/x86_64-unknown-linux-gnu/release ledr \
-		-C $(CURDIR)/target ledr.1 ledr.5
+		-C target/release ledr \
+		-C $(CURDIR)/target ledr.1 ledr.5 ledr.7
 	@echo "Creating GitHub release..."
 	git tag $(TAG)
 	git push origin $(TAG)
 	gh release create $(TAG) --generate-notes \
-		target/release-pkg/ledr-$(TAG)-darwin-arm64.tar.gz \
-		target/release-pkg/ledr-$(TAG)-linux-amd64.tar.gz
+		target/release-pkg/ledr-$(TAG)-darwin-arm64.tar.gz
 	@echo "Release $(TAG) complete!"
