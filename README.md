@@ -21,9 +21,12 @@ contains examples covering substantially all the syntax.
 
 ## Getting Started
 
-Compiling Ledr requires a working Rust toolchain. From there, it's as simple
-as cloning the repository, running `cargo build --release`, and doing what you
-will!
+A pre-built binary for macOS (arm64) is available on the
+[GitHub Releases](https://github.com/adamtrain/ledr/releases) page.
+
+Alternatively, you can compile from source. This requires a working Rust
+toolchain. Clone the repository, run `cargo build --release`, and the binary
+will be at `target/release/ledr`.
 
 ## Contributions
 
