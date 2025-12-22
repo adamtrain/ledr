@@ -120,8 +120,8 @@ sale as an isolated entry with just two lines: the lot sale and the proceeds.
 
 For example:
 
-	2024-11-24 Sell AAPL
-		Assets:Investments   -30 AAPL { 234.56 USD }
+	2024-11-24 Sell AAPL++
+		Assets:Investments   -30 AAPL { 234.56 USD }++
 		Assets:Cash         7500.00 USD
 
 This makes it clear that the proceeds were $7,500. If the sale is part of a
@@ -244,4 +244,4 @@ consult qualified financial professionals for such advice.
 # AUTHORS
 
 Maintained by *Adam Train <adam@usdocument.org>*. Up-to-date source code can be
-found at *github.com/aetxyz/ledr* and contributions are accepted via GitHub.
+found at *github.com/adamtrain/ledr* and contributions are accepted via GitHub.

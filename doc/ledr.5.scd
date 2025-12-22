@@ -477,4 +477,4 @@ consult qualified financial professionals for such advice.
 # AUTHORS
 
 Maintained by *Adam Train <adam@usdocument.org>*. Up-to-date source code can be
-found at *github.com/aetxyz/ledr* and contributions are accepted via GitHub.
+found at *github.com/adamtrain/ledr* and contributions are accepted via GitHub.

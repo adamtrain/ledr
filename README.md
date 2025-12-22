@@ -3,17 +3,23 @@
 #### Plain text accounting tool
 
 Ledr is a [plain text accounting](https://plaintextaccounting.org) tool,
-written in Rust, and designed for complex use cases. It includes a parser, an
-importer, a reporting engine, and rock-solid mathematics.
+written in Rust, and designed for complex use cases. It includes a parser,
+a reporting engine, and rock-solid mathematics.
 
 Ledr has a robust syntax and is ready for routine use.
 
-## Getting Started
+## Documentation
 
-Check out the `tests` directory for a large number of examples of specific
-entries and what they can contain. The tests cover substantially all the
-syntax of the project. This is only a stopgap recommendation until better
-documentation is written.
+Ledr includes comprehensive man pages:
+
+- **ledr(1)** - Command reference with examples
+- **ledr(5)** - Ledger file format specification
+- **ledr(7)** - Advanced topics and data integrity guidance
+
+After installation, run `man ledr` to get started. The `tests` directory also
+contains examples covering substantially all the syntax.
+
+## Getting Started
 
 Compiling Ledr requires a working Rust toolchain. From there, it's as simple
 as cloning the repository, running `cargo build --release`, and doing what you
