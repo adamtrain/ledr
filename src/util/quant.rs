@@ -149,7 +149,7 @@ impl Quant {
 		// Perform Banker's rounding
 		let half_denom = self.denominator.div_ceil(2);
 		let rounded_quotient = if remainder > half_denom
-			|| (remainder == half_denom && quotient % 2 != 0)
+			|| (remainder == half_denom && !quotient.is_multiple_of(2))
 		{
 			quotient + 1
 		} else {
