@@ -215,8 +215,19 @@ impl Parser {
 		let mut ignore_until_next_entry = false;
 
 		for (i, line) in reader.lines().enumerate() {
+			let raw_line = line?;
+
+			// Only truly blank lines (whitespace-only) terminate entries.
+			// Comment-only lines should NOT terminate entries.
+			if raw_line.trim().is_empty() {
+				ledger
+					.finish_entry()
+					.map_err(|e| anyhow!("{e} (line {i})"))?;
+				continue;
+			}
+
 			// Chop comments out and remove all commas regardless of position
-			let l = line?
+			let l = raw_line
 				.trim()
 				.split('#')
 				.next()
@@ -225,11 +236,8 @@ impl Parser {
 				.trim()
 				.to_string();
 
-			// If a line is blank, this entry is over (or we are not in one)
+			// Skip comment-only lines (they become empty after stripping)
 			if l.is_empty() {
-				ledger
-					.finish_entry()
-					.map_err(|e| anyhow!("{e} (line {i})"))?;
 				continue;
 			}
 

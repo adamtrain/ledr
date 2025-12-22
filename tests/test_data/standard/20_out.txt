@@ -1,0 +1,8 @@
+      USD 845    Assets
+      USD 895      Cash
+      USD -50      Bank
+        USD 0    Liabilities:AccountsPayable
+   USD -1,000    Equity:OpeningBalances
+      USD 155    Expenses:Licenses
+------------------
+        USD 0

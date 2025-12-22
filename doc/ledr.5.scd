@@ -380,6 +380,9 @@ first '#' sign will be ignored.
 
 This means the '#' sign cannot be used in the name of anything else.
 
+Comment-only lines are fully ignored and do not count as empty lines for the
+purpose of entry separation.
+
 # MINUTIAE
 
 A *ledr* ledger file has no specific extension. An extension of _.ledr_ is

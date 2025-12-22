@@ -1,0 +1,37 @@
+# Test comment parsing edge cases
+# Multiple comment lines at file start should be fine
+
+! 2024-11-10 currency USD
+! 2024-11-10 account Assets:Cash
+! 2024-11-10 account Assets:Bank
+! 2024-11-10 account Expenses:Licenses
+! 2024-11-10 account Liabilities:AccountsPayable
+! 2024-11-10 account Equity:OpeningBalances
+
+# Comment between directives and entries
+
+2024-11-10 Opening Balances
+    Assets:Cash             1000 USD
+    Equity:OpeningBalances
+
+# Comment between entries (should not merge them)
+
+2024-11-11 Apple Developer Program
+    # Paid by me from personal funds
+    # Hence booking to AP because my personal account
+    # has not been made whole yet
+    Expenses:Licenses            105 USD
+    Liabilities:AccountsPayable
+
+2024-11-12 Pay back personal funds
+    # Comment at start of entry
+    Liabilities:AccountsPayable  105 USD
+    # Comment between detail lines
+    Assets:Cash
+    # Comment after last detail line
+
+2024-11-13 Another expense with inline comment
+    Expenses:Licenses            50 USD  # inline comment here
+    Assets:Bank
+
+# Final comment at end of file
