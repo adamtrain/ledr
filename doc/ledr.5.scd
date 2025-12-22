@@ -392,6 +392,74 @@ Whenever a space is required, *ledr* only cares that each logical element is
 separated by at least one unit of whitespace. It can be any number you want,
 or a tab, or anything else.
 
+# ERRORS
+
+This section documents common error messages and their meanings.
+
+## Parsing Errors
+
+*Invalid include (line N)*
+	The include statement is malformed. Ensure format is: include <path>
+
+*Invalid directive (line N)*
+	A declaration line (starting with !) has invalid syntax.
+
+*Orphaned date (line N)*
+	A date line appears without any following entry detail lines.
+
+*Invalid format (line N)*
+	An entry detail line has invalid syntax, typically in the conversion
+	(@) or lot ({}) portion.
+
+*Circular file includes*
+	Two or more files include each other, creating an infinite loop.
+
+## Declaration Errors
+
+*Currency X declared twice*
+	The same currency was declared more than once.
+
+*Account X declared twice*
+	The same account was declared more than once.
+
+*Currency X used without declaration*
+	A currency was used but never declared. Either add a currency
+	declaration or use the --lenient flag.
+
+*Account X used without declaration*
+	An account was used but never declared. Either add an account
+	declaration or use the --lenient flag.
+
+*Account X is not open*
+	An account was used on a date when it was closed.
+
+## Entry Errors
+
+*Unbalanced entry*
+	The debits and credits in an entry do not sum to zero, and there is
+	no virtual detail line to absorb the imbalance.
+
+*Only one line per entry may omit amount and currency*
+	Multiple detail lines in the same entry omit their amounts.
+
+*Invalid account prefix*
+	An account does not begin with one of: Assets, Liabilities, Equity,
+	Income, or Expenses.
+
+*Empty entry*
+	An entry has no detail lines.
+
+## Lot Errors
+
+*No remaining lots for X of Y (cost basis Z)*
+	Attempting to sell more of a lot than is currently held, or
+	referencing a cost basis that does not match any open lot.
+
+## Exchange Rate Errors
+
+*Cannot declare multiple rates on same date*
+	Two rate directives exist for the same currency pair on the same date.
+
 # SEE ALSO
 
 _ledr_(1) - general reference

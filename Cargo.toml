@@ -15,7 +15,7 @@
 
 [package]
 name = "ledr"
-version = "2.1.1"
+version = "2.1.2"
 authors = ["Adam Train"]
 edition = "2021"
 description = "Plain text accounting tool"

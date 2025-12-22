@@ -220,6 +220,40 @@ Prints a concise guide to the usage of *ledr*.
 
 Prints the version of *ledr* that you have installed.
 
+# EXAMPLES
+
+Generate a balance sheet from a ledger file:
+
+	ledr -f ledger.ledr bs
+
+Generate an income statement for 2024, converted to USD:
+
+	ledr -f ledger.ledr is -b 2024-01-01 -e 2024-12-31 -c USD
+
+Check a ledger file for data quality issues:
+
+	ledr -f ledger.ledr check
+
+Search for all entries mentioning "Amazon":
+
+	ledr -f ledger.ledr find Amazon
+
+View account summary for all cash accounts:
+
+	ledr -f ledger.ledr as Cash
+
+Generate a trial balance with accounts summarized to depth 2:
+
+	ledr -f ledger.ledr tb -d 2
+
+View realized gains for the current tax year:
+
+	ledr -f ledger.ledr rgl -b 2024-01-01
+
+Format and validate a ledger file:
+
+	ledr -f ledger.ledr fmt
+
 # ACCOUNTING PRINCIPLES
 
 *ledr*, like all prominent plain text accounting tools, uses double-entry
@@ -363,6 +397,22 @@ _ledr_(5) - general ledger file format
 
 _ledr_(7) - data integrity guidance, further discussion of lot management and
 currency conversion
+
+# EXIT STATUS
+
+*ledr* exits 0 on success, and non-zero if an error occurs.
+
+Common error conditions include invalid file format, unbalanced entries,
+undeclared accounts or currencies (in strict mode), and invalid lot
+references.
+
+# FILES
+
+*ledr* does not use configuration files. All options are specified via
+command-line flags.
+
+Ledger files conventionally use the _.ledr_ extension, though any file
+extension is accepted.
 
 # DISCLAIMER
 
