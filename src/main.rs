@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,302 +13,246 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::gl::total::Total;
-use crate::investment::lot::LotStatus;
-use crate::investment::portfolio::{LotFilter, Portfolio};
-use crate::parsing::parser::ParseResult;
-use crate::reports::ledger_reporter::LedgerReporter;
-use crate::reports::portfolio_reporter::PortfolioReporter;
-use crate::reports::rate_reporter::RateReporter;
-use crate::reports::statement_reporter::StatementReporter;
-use crate::util::date::Date;
-use anyhow::{bail, Error};
-use chrono::Local;
-use clap::{Parser, ValueEnum};
-use gl::ledger::Ledger;
-use std::cmp::PartialEq;
-use std::collections::BTreeMap;
 
-mod gl;
-mod investment;
-mod parsing;
-mod reports;
-mod util;
+mod cli;
 
-#[derive(Parser)]
-#[command(name = "ledr", version = "1.0", about = "Plain text accounting tool")]
-struct Cli {
-	// ----------------
-	// -- POSITIONAL --
-	// ----------------
-	/// The command to execute
-	command: Directive,
+use anyhow::{Error, anyhow};
+use clap::{CommandFactory, Parser};
+use cli::{Cli, Command, Global};
+use ledr::commands::{self, Context, Output};
+use ledr::diagnostics::Diagnostic;
+use ledr::parsing::LoadOptions;
+use ledr::render::statement::StatementKind;
+use ledr::render::{self, Mode};
+use ledr::syntax::source::SourceMap;
+use ledr::ui::style::{self, ColorLevel};
+use ledr::util::date::Date;
+use ledr::util::period::{Edge, parse_bound, parse_period};
+use ledr::util::quant::OVERFLOW_MESSAGE;
+use std::io::{IsTerminal, Write};
+use std::process::ExitCode;
 
-	/// The search term for the AS and Find commands
-	#[arg(required = false)]
-	term: Option<String>,
+fn main() -> ExitCode {
+	install_panic_hook();
+	let cli = Cli::parse();
 
-	// -----------
-	// -- FLAGS --
-	// -----------
-	/// Specifies the input file
-	#[arg(short)]
-	file: String,
+	let mode = output_mode(&cli.global, std::io::stdout().is_terminal());
+	let error_mode = output_mode(&cli.global, std::io::stderr().is_terminal());
 
-	/// Ignore entries prior to this date (YYYY-MM-DD)
-	#[arg(short, long)]
-	begin: Option<String>,
-
-	/// Ignore entries after this date (YYYY-MM-DD)
-	#[arg(short, long)]
-	end: Option<String>,
-
-	/// Convert all possible balances to this currency
-	#[arg(short, long)]
-	currency: Option<String>,
-
-	/// Ignore balances that do not resolve to this currency
-	#[arg(long = "ioc")]
-	ignore_other_currencies: bool,
-
-	/// Hides equity accounts from reports
-	#[arg(short = 'E', long)]
-	ignore_equity: bool,
-
-	/// Condense accounts nested below this depth
-	#[arg(short, long)]
-	depth: Option<usize>,
-
-	/// Negates all currency values
-	#[arg(short, long)]
-	invert: bool,
-
-	/// Ignore directives designed to catch and correct bad input data
-	#[arg(long)]
-	lenient: bool,
-
-	/// Maximum amount of decimal places to show for any amounts
-	#[arg(short, long)]
-	precision: Option<u32>,
-}
-
-impl Cli {
-	/// The point is that this number exceeds what anyone wants; it's just to
-	/// stop the program from printing e.g. millions of zeroes by accident
-	const MAX_PRECISION: u32 = 50;
-
-	/// Extra validations on top of what clap does
-	fn validate(&self) -> Result<(), Error> {
-		if let Some(prec) = self.precision {
-			if prec > Cli::MAX_PRECISION {
-				bail!("Maximum precision is {}", Cli::MAX_PRECISION);
+	let mut sources = SourceMap::new();
+	match run(cli, mode, &mut sources) {
+		Ok(output) => {
+			write_stdout(&output.text);
+			if let Some(notice) = output.notice {
+				eprintln!("{notice}");
 			}
-		}
-
-		Ok(())
-	}
-}
-
-#[derive(ValueEnum, Clone, PartialEq)]
-enum Directive {
-	Bs, // balance sheet
-	Is, // income statement
-	Tb, // trial balance
-
-	Er, // exchange rates
-
-	Rgl, // realized gains/losses report
-	Ugl, // unrealized gains/losses report
-
-	As,   // account summary
-	Fmt,  // format and output the ledger's entries
-	Find, // search for entries by description
-
-	Check, // find possible data integrity concerns
-}
-
-fn main() -> Result<(), Error> {
-	let args = Cli::parse();
-	args.validate()?;
-
-	let (begin, end) = get_range(&args)?;
-
-	let mut ledger =
-		Ledger::new(args.lenient, args.command == Directive::Check);
-
-	let mut parser = parsing::parser::Parser::new();
-	let parse_result = parser.parse(&args.file, &mut ledger, &end)?;
-
-	let portfolio =
-		finalize_ledger(&mut ledger, args.precision, &parse_result, &begin)?;
-
-	match args.command {
-		Directive::Bs => financial_statement(
-			ledger,
-			args,
-			true,
-			vec!["Assets", "Liabilities"],
-			parse_result.max_precision_by_currency,
-		)?,
-		Directive::Is => financial_statement(
-			ledger,
-			args,
-			false,
-			vec!["Income", "Expenses"],
-			parse_result.max_precision_by_currency,
-		)?,
-		Directive::Tb => financial_statement(
-			ledger,
-			args,
-			true,
-			vec!["Assets", "Liabilities", "Income", "Expenses", "Equity"],
-			parse_result.max_precision_by_currency,
-		)?,
-		Directive::Er => {
-			let rates = ledger.exchange_rates.take_all_rates();
-			let reporter = RateReporter::new(rates);
-			reporter.print_all_rates();
-		},
-		Directive::Rgl => {
-			let reporter = PortfolioReporter::new(
-				portfolio.take_lots(vec![LotFilter::HasSales(true)]),
-				parse_result.max_precision_by_currency,
-				args.precision.unwrap_or(u32::MAX),
-			);
-			reporter.print_realized_gain_loss(
-				&begin,
-				&end.min(today()),
-				&ledger.exchange_rates,
-			)
-		},
-		Directive::Ugl => {
-			let reporter = PortfolioReporter::new(
-				portfolio.take_lots(vec![LotFilter::Status(LotStatus::Open)]),
-				parse_result.max_precision_by_currency,
-				args.precision.unwrap_or(u32::MAX),
-			);
-			reporter.print_unrealized_gain_loss(
-				&end.min(today()),
-				&ledger.exchange_rates,
-			)
-		},
-		Directive::As => {
-			// Ensure the search term is provided for the AS command
-			if let Some(account) = &args.term {
-				let entries = LedgerReporter::new(ledger.take_entries());
-				// no need to pass ignore_other_currencies in here because
-				// this report always does that
-				entries.account_summary(account, args.currency)
+			if output.failed {
+				ExitCode::FAILURE
 			} else {
-				bail!("No account specified");
+				ExitCode::SUCCESS
 			}
 		},
-		Directive::Find => {
-			if args.term.is_none() {
-				bail!("No search term specified");
-			}
-			ledger.print(&begin, args.term);
-		},
-		Directive::Fmt => {
-			ledger.print(&begin, None);
-		},
-		Directive::Check => {
-			// simple log; warnings occur dynamically throughout processing
-			println!("Done");
+		Err(error) => {
+			eprint!(
+				"{}",
+				render::diagnostics::error(&error, &sources, error_mode)
+			);
+			ExitCode::FAILURE
 		},
 	}
-
-	Ok(())
 }
 
-/// Performs validation of the ledger, and returns the portfolio representing
-/// the state of lots.
-fn finalize_ledger(
-	ledger: &mut Ledger,
-	max_precision: Option<u32>,
-	parse_result: &ParseResult,
-	begin: &Date,
-) -> Result<Portfolio, Error> {
-	ledger
-		.exchange_rates
-		.finalize(&parse_result.max_precision_by_currency)?;
-
-	let portfolio = ledger.lots.tabulate()?;
-
-	ledger.finalize(
-		begin,
-		&parse_result.max_precision_by_currency,
-		max_precision,
-	)?;
-
-	Ok(portfolio)
+/// Fancy in a terminal, plain otherwise, unless told. Setting LEDR_PLAIN
+/// makes plain the default everywhere.
+fn output_mode(global: &Global, is_terminal: bool) -> Mode {
+	let prefer_plain = std::env::var("LEDR_PLAIN").is_ok_and(|v| {
+		!matches!(v.to_lowercase().as_str(), "" | "0" | "false" | "no")
+	});
+	if global.plain || (!global.fancy && (!is_terminal || prefer_plain)) {
+		Mode::Plain
+	} else {
+		Mode::Fancy {
+			color: ColorLevel::detect(),
+			width: style::terminal_width(),
+		}
+	}
 }
 
-fn financial_statement(
-	ledger: Ledger,
-	args: Cli,
-	include_equity_by_default: bool,
-	top_level_accounts_to_show: Vec<&str>,
-	mut max_precision_by_currency: BTreeMap<String, u32>,
-) -> Result<(), Error> {
-	let mut totals = ledger_to_totals(
-		ledger,
-		args.currency,
-		args.invert,
-		args.ignore_other_currencies,
-	)?;
+fn run(cli: Cli, mode: Mode, sources: &mut SourceMap) -> Result<Output, Error> {
+	let Some(command) = cli.command else {
+		// With a ledger to look at, show an overview; otherwise, help
+		if cli.global.file.is_some() {
+			let ctx = context(&cli.global, mode)?;
+			return commands::overview(&ctx, sources);
+		}
+		Cli::command().print_help()?;
+		return Ok(plain_output(String::new()));
+	};
 
-	totals.round(
-		args.precision.unwrap_or(u32::MAX),
-		&mut max_precision_by_currency,
-		true,
+	if let Command::Completions { shell } = command {
+		let mut out = vec![];
+		clap_complete::generate(shell, &mut Cli::command(), "ledr", &mut out);
+		return Ok(plain_output(String::from_utf8_lossy(&out).into_owned()));
+	}
+
+	let ctx = context(&cli.global, mode)?;
+	match command {
+		Command::Bs => {
+			commands::statement(&ctx, sources, StatementKind::Balance)
+		},
+		Command::Is => {
+			commands::statement(&ctx, sources, StatementKind::Income)
+		},
+		Command::Tb => commands::statement(&ctx, sources, StatementKind::Trial),
+		Command::Er => commands::rates(&ctx, sources),
+		Command::Rgl => commands::realized(&ctx, sources),
+		Command::Ugl => commands::unrealized(&ctx, sources),
+		Command::As { account } => commands::account(&ctx, sources, &account),
+		Command::Fmt => commands::print(&ctx, sources, None),
+		Command::Find { term } => commands::print(&ctx, sources, Some(&term)),
+		Command::Check { strict } => commands::check(&ctx, sources, strict),
+		Command::Add(args) => {
+			let request = commands::AddRequest {
+				words: args.words,
+				to: args.to,
+				yes: args.yes,
+				dry_run: args.dry_run,
+				interactive: std::io::stdin().is_terminal()
+					&& std::io::stdout().is_terminal(),
+			};
+			commands::add(&ctx, sources, &request)
+		},
+		Command::Tidy(args) => {
+			commands::tidy(&ctx, sources, args.write, args.check)
+		},
+		Command::Accounts => commands::accounts(&ctx, sources),
+		Command::Payees => commands::payees(&ctx, sources),
+		Command::Completions { .. } => unreachable!(),
+	}
+}
+
+fn plain_output(text: String) -> Output {
+	Output {
+		text,
+		notice: None,
+		failed: false,
+	}
+}
+
+fn context(global: &Global, mode: Mode) -> Result<Context, Error> {
+	let file = global.file.clone().ok_or_else(|| {
+		Diagnostic::error("No ledger file given")
+			.help("pass one with -f FILE, or set LEDR_FILE in your environment")
+	})?;
+
+	let today = Date::today();
+	let date = |text: &Option<String>,
+	            edge: Edge,
+	            flag: &str|
+	 -> Result<Option<Date>, Error> {
+		text.as_deref()
+			.map(|t| {
+				parse_bound(t, edge, today).map_err(|e| anyhow!("{flag}: {e}"))
+			})
+			.transpose()
+	};
+	let (mut begin, mut end) = (
+		date(&global.begin, Edge::Start, "--begin")?,
+		date(&global.end, Edge::End, "--end")?,
 	);
-
-	let mut top_levels = top_level_accounts_to_show;
-	if include_equity_by_default && !args.ignore_equity {
-		top_levels.push("Equity");
-	}
-	totals.filter_top_level(top_levels);
-	let mut reporter = StatementReporter::from_total(totals);
-
-	reporter.sort_canonical();
-	reporter.print_ledger_format(args.depth);
-	Ok(())
-}
-
-fn ledger_to_totals(
-	mut ledger: Ledger,
-	collapse: Option<String>,
-	invert: bool,
-	ignore_other_currencies: bool,
-) -> Result<Total, Error> {
-	let mut totals = Total::from_ledger(&ledger);
-
-	if let Some(collapse) = &collapse {
-		totals.collapse_to(
-			collapse,
-			&mut ledger.exchange_rates,
-			ignore_other_currencies,
-		);
+	if let Some(period) = &global.period {
+		let (b, e) = parse_period(period, today).map_err(|_| {
+			anyhow!(
+				"--period: `{period}` is not a period I understand; try 2024, \
+				2024-03, 2024-Q1, last-month or ytd"
+			)
+		})?;
+		begin = Some(b);
+		end = Some(e);
 	}
 
-	if invert {
-		totals.invert();
+	let mut load = LoadOptions::new(file);
+	load.lenient = global.lenient;
+	load.begin = begin.unwrap_or_else(Date::min);
+	load.end = end.unwrap_or_else(Date::max);
+	load.precision = global.precision;
+
+	Ok(Context {
+		load,
+		mode,
+		currency: global.currency.clone(),
+		ignore_other_currencies: global.ignore_other_currencies,
+		ignore_equity: global.ignore_equity,
+		depth: global.depth,
+		invert: global.invert,
+		begin_given: begin.is_some(),
+		end_given: end.is_some(),
+		today,
+	})
+}
+
+/// Writes to stdout, quietly stopping if the reader has gone away, as when
+/// piping into `head`
+fn write_stdout(text: &str) {
+	let mut stdout = std::io::stdout().lock();
+	if stdout
+		.write_all(text.as_bytes())
+		.and_then(|_| stdout.flush())
+		.is_err()
+	{
+		// Nothing useful to do; the reader closed the pipe
 	}
-
-	Ok(totals)
 }
 
-fn get_range(args: &Cli) -> Result<(Date, Date), Error> {
-	let begin = Date::from_str(
-		args.begin.as_ref().unwrap_or(&Date::min().to_string()),
-	)?;
-	let end =
-		Date::from_str(args.end.as_ref().unwrap_or(&Date::max().to_string()))?;
+/// Replaces Rust's panic output with something a person can act on. Every
+/// arithmetic overflow panics with a known message, which becomes a normal
+/// error; anything else is a bug worth reporting.
+fn install_panic_hook() {
+	std::panic::set_hook(Box::new(|info| {
+		let message = info
+			.payload()
+			.downcast_ref::<String>()
+			.map(String::as_str)
+			.or_else(|| info.payload().downcast_ref::<&str>().copied())
+			.unwrap_or("unknown error");
 
-	Ok((begin, end))
-}
+		let diagnostic = if message == OVERFLOW_MESSAGE {
+			Diagnostic::error(
+				"A number is too large or too precise to compute exactly",
+			)
+			.note("ledr never rounds silently, so it stopped rather than guess")
+			.help(
+				"look for amounts with very many decimal places, or extreme \
+					exchange rates",
+			)
+		} else {
+			let location = info
+				.location()
+				.map(|l| format!(" at {}:{}", l.file(), l.line()))
+				.unwrap_or_default();
+			Diagnostic::error(format!("ledr hit a bug: {message}{location}"))
+				.help(
+					"please report this at https://github.com/adamtrain/ledr/issues",
+				)
+		};
 
-fn today() -> Date {
-	Date::from_str(&Local::now().date_naive().to_string()).unwrap()
+		let mode = if std::io::stderr().is_terminal() {
+			Mode::Fancy {
+				color: ColorLevel::detect(),
+				width: 80,
+			}
+		} else {
+			Mode::Plain
+		};
+		let text = match mode {
+			Mode::Plain => {
+				render::diagnostics::plain(&diagnostic, &SourceMap::new())
+			},
+			Mode::Fancy { .. } => mode.render(&render::diagnostics::fancy(
+				&diagnostic,
+				&SourceMap::new(),
+			)),
+		};
+		eprint!("{text}");
+	}));
 }

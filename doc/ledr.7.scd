@@ -36,12 +36,16 @@ When *ledr* encounters an include statement, it pauses processing of the current
 file, processes the included file (in whichever pass is active), then resumes
 the original file.
 
-Include paths are resolved relative to the current working directory, not the
-directory of the file containing the include statement. For this reason, it is
-best practice to use fully qualified (absolute) paths in include statements.
+Include paths are resolved relative to the directory of the file containing
+the include statement, so a set of ledger files can be moved together, and read
+from any working directory. Absolute paths work too.
 
 Circular includes are detected and rejected with an error. If file A includes
-file B, and file B includes file A, *ledr* will stop processing.
+file B, and file B includes file A, *ledr* will stop processing, and show the
+chain of includes. A file included twice by different files is rejected too.
+
+Syntax errors in every file are collected and reported together, so that one
+run shows everything that needs fixing.
 
 ## Entry Ordering
 
@@ -158,7 +162,7 @@ currencies.
 
 When multiple paths of equal length exist, *ledr* prefers paths with more
 declared rates (as they are considered more reliable) and averages the
-resulting conversion rates.
+resulting conversion rates. Averages that cancel out to zero are not used.
 
 ## Declared Rate Rules
 
@@ -171,13 +175,28 @@ implies that 1 CAD = 0.769 USD (approximately).
 
 ## Inferred Rate Rules
 
-When *ledr* observes an implicit exchange rate from a transaction, only the
-first observation for a given currency pair on a given date is retained.
-Subsequent observations on the same date are ignored.
+When *ledr* observes several implicit exchange rates between the same pair of
+currencies on the same date, the last one processed is used for that date.
 
 This means the order of entries in your ledger file can affect which implicit
 rate is used. If you have multiple transactions between the same currencies on
-the same date with different effective rates, the first one processed wins.
+the same date with different effective rates, the last one in the file wins.
+
+A declared rate always takes precedence over conversions observed on the same
+date. If an observed conversion strays more than 5% from the declared rate,
+*ledr check* warns about it, since one or the other is probably a mistake.
+
+For converting balances, *ledr* also keeps the most recent rate known for each
+pair of currencies across all dates. This lets it convert between currencies
+that were only ever connected on different days, for example bitcoin bought
+with dollars one day and traded for ether the next. Such conversions follow a
+single shortest path of these rates, and are only used when no rate between
+the two currencies is known on any one date.
+
+Gains and losses are more careful: proceeds in another currency are only
+converted at a rate known on or before the date of the sale, never at one
+pieced together across dates, which could come from after the sale or from
+the lot's own prices. When there is no such rate, the gain is unknown.
 
 ## Implicit Conversions
 
@@ -201,6 +220,19 @@ would warn about the inconsistent cycle.
 
 The following practices help maintain accurate ledger data:
 
+## Check Often
+
+Run *ledr check* after editing. It reports every error at once, with the
+lines involved, and warns about entries that are allowed but look like
+mistakes. With *--strict*, it fails on warnings too, which makes it a good
+pre-commit hook alongside *ledr tidy --check*.
+
+## Let ledr Write Entries
+
+*ledr add* validates an entry against the whole ledger before writing it, so
+an entry it saves never breaks the ledger. It also declares new accounts for
+you, which keeps strict mode painless.
+
 ## Use Explicit Declarations
 
 Run *ledr* without the --lenient flag. This requires you to declare all accounts
@@ -217,11 +249,10 @@ selling.
 Record each lot sale as a separate entry with just the sale and the proceeds.
 This allows *ledr* to accurately track proceeds for capital gains reporting.
 
-## Use Absolute Paths in Includes
+## Keep Includes Relative
 
-Since include paths are resolved relative to the current working directory,
-using absolute paths ensures your ledger files work regardless of where you
-run *ledr* from.
+Since include paths are resolved relative to the including file, relative
+paths keep a set of ledger files working wherever they are moved to.
 
 ## Declare Exchange Rates
 
@@ -243,5 +274,5 @@ consult qualified financial professionals for such advice.
 
 # AUTHORS
 
-Maintained by *Adam Train <adam@usdocument.org>*. Up-to-date source code can be
+Maintained by *Adam Train <adam@adametrain.com>*. Up-to-date source code can be
 found at *github.com/adamtrain/ledr* and contributions are accepted via GitHub.

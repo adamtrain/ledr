@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,426 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+
+//! Builds a [`Ledger`] from lexed lines.
+
+use crate::diagnostics::{Diagnostic, Locate};
 use crate::gl::ledger::Ledger;
 use crate::gl::observed_rate::ObservationType;
-use crate::parsing::filesystem::Filesystem;
+use crate::parsing::loader::Item;
+use crate::syntax::lexer::{Cols, Directive, LineKind, Posting};
+use crate::syntax::source::{FileId, Span};
 use crate::util::amount::Amount;
 use crate::util::date::Date;
-use crate::util::quant::Quant;
-use anyhow::{anyhow, bail, Error};
-use regex::Regex;
-use std::collections::{BTreeMap, VecDeque};
-use std::fs::File;
-use std::io;
-use std::io::{BufRead, Seek};
-
-pub struct Parser {
-	fs: Filesystem,
-	detail_regex: Regex,
-
-	/// Kept to perform sorting of entries on some reports in the order
-	/// they appear, second only to their date in sort order.
-	entry_count: usize,
-}
-
-impl Parser {
-	pub fn new() -> Self {
-		let re = Regex::new(r#""([^"]*)"|(\S+)"#).unwrap();
-		Self {
-			detail_regex: re,
-			fs: Filesystem::new(),
-			entry_count: 0,
-		}
-	}
-
-	/// Opens and parses the file at file_path into the passed Ledger. We make two
-	/// passes through the file: the first processes directives, and the second
-	/// processes everything else. This means we are agnostic to the order of any
-	/// contents of the file. The only exception is that when multiple implicit
-	/// currency conversions occur in the same day between the same currencies, all
-	/// reporting will use the latest one processed in the file.
-	pub fn parse(
-		&mut self,
-		file_path: &str,
-		ledger: &mut Ledger,
-		ignore_after: &Date,
-	) -> Result<ParseResult, Error> {
-		let mut file = self.fs.open(file_path)?;
-
-		self.first_pass(file_path, &file, ledger, ignore_after)?;
-		file.rewind()?;
-
-		// Second pass is responsible for assembling the ParseResult object,
-		// which we pass in this way so it can be passed recursively within.
-		let mut output: ParseResult = Default::default();
-		self.second_pass(&file, ledger, &mut output, ignore_after, file_path)?;
-
-		Ok(output)
-	}
-
-	/// First pass to process only directive lines. Include statements in the file
-	/// may cause this to be called recursively, so it uses the passed Ledger struct
-	/// to keep track of files it's traversed before, and block circular inclusion.
-	///
-	/// Note: The first pass ignores beginning and end bounds, to make sure all
-	/// directives are captured; it'd be too annoying to move account and currency
-	/// declarations for the interval you want.
-	fn first_pass(
-		&mut self,
-		path: &str,
-		file: &File,
-		ledger: &mut Ledger,
-		ignore_after: &Date,
-	) -> Result<(), Error> {
-		self.fs.declare_file(path)?;
-
-		let reader = io::BufReader::new(file);
-
-		for (i, line) in reader.lines().enumerate() {
-			// Chop comments out
-			let l = line?
-				.trim()
-				.split('#')
-				.next()
-				.unwrap_or_default()
-				.trim()
-				.to_string();
-
-			// Skip blank lines
-			if l.is_empty() {
-				continue;
-			}
-
-			// Handle includes, which recursively first_passes when seen
-			if l.starts_with("include") {
-				let include: Vec<&str> = l.split_whitespace().collect();
-				if include.len() != 2 {
-					bail!("Invalid include (line {i})")
-				}
-
-				let resolved_path = self.fs.resolve_path(path, include[1]);
-				let file = self.fs.open(&resolved_path)?;
-				self.first_pass(&resolved_path, &file, ledger, ignore_after)?;
-				continue;
-			}
-
-			let mut directive: VecDeque<&str> = match l.strip_prefix("!") {
-				None => continue,
-				Some(d) => d.split_whitespace().collect(),
-			};
-
-			if directive.len() < 2 {
-				bail!("Invalid directive (line {}): {}", i + 1, l);
-			}
-
-			let date_str = directive.pop_front().unwrap();
-			let date = Date::from_str(date_str.trim())
-				.map_err(|e| anyhow!("{e} (line {i})"))?;
-
-			if &date > ignore_after {
-				continue;
-			}
-
-			match directive[0] {
-				"account" if directive.len() == 2 => {
-					let account = directive[1].to_string();
-					if !account.contains(":") {
-						bail!("Top level accounts cannot be used on their own (line {i})");
-					}
-					ledger
-						.declare_account(account, date)
-						.map_err(|e| anyhow!("{e} (line {i})"))?;
-				},
-				"open" if directive.len() == 2 => {
-					let account = directive[1].to_string();
-					if !account.contains(":") {
-						bail!("Top level accounts cannot be used on their own (line {i})");
-					}
-					ledger
-						.declare_account_open(account, date)
-						.map_err(|e| anyhow!("{e} (line {i})"))?;
-				},
-				"close" if directive.len() == 2 => {
-					let account = directive[1].to_string();
-					if !account.contains(":") {
-						bail!("Top level accounts cannot be used on their own (line {i})");
-					}
-					ledger
-						.declare_account_closure(account, date)
-						.map_err(|e| anyhow!("{e} (line {i})"))?;
-				},
-				"clear" if directive.len() == 2 => {
-					let currency = directive[1].to_string();
-					ledger.declare_clear(currency, date);
-				},
-				"currency" if directive.len() == 2 => {
-					let currency = directive[1].to_string();
-					ledger
-						.declare_currency(&currency, date)
-						.map_err(|e| anyhow!("{e} (line {i})"))?;
-				},
-				"rate" if directive.len() == 4 => {
-					let from = directive[1].to_string();
-					let to = directive[2].to_string();
-					let rate = directive[3];
-					ledger
-						.exchange_rates
-						.add_rate(
-							date,
-							from,
-							to,
-							Quant::from_str(rate)
-								.map_err(|e| anyhow!("{e} (line {i})"))?,
-							ObservationType::Declared,
-						)
-						.map_err(|e| anyhow!("{e} (line {i})"))?;
-				},
-				"worthless" if directive.len() == 2 => {
-					let currency = directive[1].to_string();
-					ledger.exchange_rates.declare_worthless(currency);
-				},
-				_ => bail!("Invalid directive (line {}): {}", i + 1, l),
-			}
-		}
-
-		Ok(())
-	}
-
-	/// Second pass to process everything else other than directives. Include
-	/// statements may cause this method to call itself recursively, but it does
-	/// not need to keep track of where it is to avoid circular include statements
-	/// because first_pass has already done that.
-	fn second_pass(
-		&mut self,
-		file: &File,
-		ledger: &mut Ledger,
-		parse_result: &mut ParseResult,
-		ignore_after: &Date,
-		current_path: &str,
-	) -> Result<(), Error> {
-		let reader = io::BufReader::new(file);
-
-		let mut ignore_until_next_entry = false;
-
-		for (i, line) in reader.lines().enumerate() {
-			let raw_line = line?;
-
-			// Only truly blank lines (whitespace-only) terminate entries.
-			// Comment-only lines should NOT terminate entries.
-			if raw_line.trim().is_empty() {
-				ledger
-					.finish_entry()
-					.map_err(|e| anyhow!("{e} (line {i})"))?;
-				continue;
-			}
-
-			// Chop comments out and remove all commas regardless of position
-			let l = raw_line
-				.trim()
-				.split('#')
-				.next()
-				.unwrap_or_default()
-				.replace(',', "")
-				.trim()
-				.to_string();
-
-			// Skip comment-only lines (they become empty after stripping)
-			if l.is_empty() {
-				continue;
-			}
-
-			// Handle includes, which recursively second_passes when seen.
-			// No need to check the structure of the include because the
-			// first pass would've failed by now if it were invalid.
-			if l.starts_with("include") {
-				let include: Vec<&str> = l.split_whitespace().collect();
-
-				let resolved_path =
-					self.fs.resolve_path(current_path, include[1]);
-				let file = self.fs.open(&resolved_path)?;
-				self.second_pass(
-					&file,
-					ledger,
-					parse_result,
-					ignore_after,
-					&resolved_path,
-				)?;
-				continue;
-			}
-
-			// ignore directives
-			if l.starts_with('!') {
-				continue;
-			}
-
-			// Lines that start with two slashes are reference lines.
-			// Empty references are fine; they just do nothing
-			if l.starts_with("//") && l.len() > 2 && !ignore_until_next_entry {
-				let content = l[2..].trim();
-				if !content.is_empty() {
-					ledger.add_reference(content.to_string())?;
-				}
-				continue;
-			}
-
-			// Handle entry declaration lines with a date and description
-			if let Some((date_str, desc)) = l.split_once(' ') {
-				if let Ok(date) = Date::from_str(date_str.trim()) {
-					if &date > ignore_after {
-						ignore_until_next_entry = true;
-						continue;
-					}
-
-					ignore_until_next_entry = false;
-
-					ledger
-						.new_entry(
-							date,
-							desc.trim().to_string(),
-							self.entry_count,
-						)
-						.map_err(|e| anyhow!("{e} (line {i})"))?;
-
-					self.entry_count += 1;
-
-					parse_result.note_date(date);
-					continue;
-				}
-			}
-
-			// Make sure the line is not a date by itself
-			if Date::from_str(&l).is_ok() {
-				bail!("Orphaned date (line {i}): {l}");
-			}
-
-			if ignore_until_next_entry {
-				continue;
-			}
-
-			// Handle entry detail lines, which all have different numbers of
-			// terms; with the below regex we split all by whitespace except
-			// terms surrounded by quotations, which are for lot naming
-			let parts = self.parse_entry_detail(&l);
-			if parts.len() == 1 {
-				let account = parts[0].clone();
-				ledger
-					.set_virtual_detail(account)
-					.map_err(|e| anyhow!("{e} (line {i})"))?;
-				continue;
-			}
-
-			let account = parts[0].to_string();
-			let amount = Amount::new(Quant::from_str(&parts[1])?, &parts[2]);
-			parse_result.note_precision(
-				&amount.currency,
-				amount.value.render_precision(),
-			);
-
-			match parts.len() {
-				// no inline conversion
-				3 => ledger
-					.add_detail(account, amount, None, None, None)
-					.map_err(|e| anyhow!("{e} (line {i})"))?,
-				6 => {
-					// inline conversion, i.e. `@ 20.00 USD`
-					let is_total_cost = match parts[3].as_str() {
-						"@" => false,
-						"@@" => true,
-						_ => bail!("Invalid format (line {i})"),
-					};
-
-					let mut ic_amount = Quant::from_str(parts[4].as_str())
-						.map_err(|_| anyhow!("Invalid value (line {i})"))?;
-					let ic_currency = parts[5].to_string();
-
-					parse_result.note_precision(
-						&ic_currency,
-						ic_amount.render_precision(),
-					);
-
-					if is_total_cost {
-						ic_amount /= amount.value
-					};
-
-					ledger
-						.add_detail(
-							account,
-							amount,
-							Some(Amount::new(ic_amount, &ic_currency)),
-							None,
-							None,
-						)
-						.map_err(|e| anyhow!("{e} (line {i})"))?
-				},
-				7 | 8 => {
-					// lot declaration, i.e. `{ 20.00 USD }`
-					if parts[3] != "{" || parts.last().unwrap() != "}" {
-						bail!("Invalid format (line {i})");
-					}
-
-					// Grab cost basis
-					let cb_amount = Quant::from_str(parts[4].as_str())
-						.map_err(|_| anyhow!("Invalid value (line {i})"))?;
-					let cb_currency = parts[5].to_string();
-
-					parse_result.note_precision(
-						&cb_currency,
-						cb_amount.render_precision(),
-					);
-
-					let lot_name = if parts.len() == 8 {
-						Some(parts[6].to_string())
-					} else {
-						None
-					};
-
-					// The purchase of a lot implies an exchange rate for that
-					// lot on that date, with its cost basis. The sale of a
-					// lot does not.
-					let implied_conversion = if amount.value > 0 {
-						Some(Amount::new(cb_amount, &cb_currency))
-					} else {
-						None
-					};
-
-					ledger
-						.add_detail(
-							account,
-							amount,
-							implied_conversion,
-							Some(Amount {
-								value: cb_amount,
-								currency: cb_currency,
-							}),
-							lot_name,
-						)
-						.map_err(|e| anyhow!("{e} (line {i})"))?
-				},
-				_ => bail!("Invalid format (line {i})"),
-			}
-		}
-
-		// Make sure to finish the last entry if the file ends without an empty line
-		ledger
-			.finish_entry()
-			.map_err(|e| anyhow!("{e} (line eof)"))?;
-
-		Ok(())
-	}
-
-	fn parse_entry_detail(&self, input: &str) -> Vec<String> {
-		self.detail_regex
-			.captures_iter(input)
-			.map(|cap| {
-				// Capture either the quoted group or the unquoted group
-				cap.get(1).map_or_else(
-					move || cap[2].to_string(),
-					|m| m.as_str().to_string(),
-				)
-			})
-			.collect()
-	}
-}
+use anyhow::Error;
+use std::collections::{BTreeMap, HashSet};
 
 #[derive(Debug, Default)]
 pub struct ParseResult {
@@ -440,6 +33,12 @@ pub struct ParseResult {
 	pub max_precision_by_currency: BTreeMap<String, u32>,
 	/// Latest date of any entry (ignores directives)
 	pub latest_date: Date,
+	/// Problems found while carrying on past them, if asked to
+	pub problems: Vec<Diagnostic>,
+	/// Accounts used without being declared, with the first date used
+	pub undeclared_accounts: BTreeMap<String, Date>,
+	/// Currencies used without being declared, with the first date used
+	pub undeclared_currencies: BTreeMap<String, Date>,
 }
 
 impl ParseResult {
@@ -456,4 +55,333 @@ impl ParseResult {
 			self.latest_date = date;
 		}
 	}
+}
+
+/// Assembles the ledger from every line, as read by the loader, in two
+/// passes. The first applies directives and the second everything else, so
+/// directives may appear anywhere, even after the entries that rely on them.
+/// Anything dated after `ignore_after` is skipped.
+///
+/// With `keep_going`, problems with declarations and unbalanced entries are
+/// collected into the result rather than stopping the build, so that they
+/// can all be reported at once.
+pub fn build(
+	items: &[Item],
+	ledger: &mut Ledger,
+	ignore_after: &Date,
+	keep_going: bool,
+) -> Result<ParseResult, Error> {
+	let mut builder = Builder {
+		ledger,
+		result: ParseResult::default(),
+		keep_going,
+		reported: HashSet::new(),
+		pending_date: None,
+	};
+	builder.directives(items, ignore_after)?;
+	builder.entries(items, ignore_after)?;
+	Ok(builder.result)
+}
+
+fn span(file: FileId, number: usize, cols: Cols) -> Span {
+	Span::new(file, number, cols.start, cols.end)
+}
+
+struct Builder<'a> {
+	ledger: &'a mut Ledger,
+	result: ParseResult,
+	keep_going: bool,
+	/// Messages already collected, so repeats are not reported twice
+	reported: HashSet<String>,
+	/// The date of the entry being built, if any
+	pending_date: Option<Date>,
+}
+
+impl Builder<'_> {
+	/// A failure that stops the build, unless we are keeping going, in which
+	/// case it is noted and the build carries on
+	fn soft(
+		&mut self,
+		outcome: Result<(), Error>,
+		at: Option<Span>,
+	) -> Result<(), Error> {
+		let Err(error) = outcome else {
+			return Ok(());
+		};
+		let error = match at {
+			Some(at) => Diagnostic::locate(error, at),
+			None => error,
+		};
+		if !self.keep_going {
+			return Err(error);
+		}
+		let diagnostic = match error.downcast::<Diagnostic>() {
+			Ok(d) => d,
+			Err(other) => Diagnostic::error(other.to_string()).at_opt(at),
+		};
+		if self.reported.insert(diagnostic.message.clone()) {
+			self.result.problems.push(diagnostic);
+		}
+		Ok(())
+	}
+
+	fn finish(&mut self) -> Result<(), Error> {
+		let outcome = self.ledger.finish_entry();
+		self.soft(outcome, None)
+	}
+
+	fn check_account(&mut self, account: &str, at: Span) -> Result<(), Error> {
+		if self.ledger.is_lenient() {
+			return Ok(());
+		}
+		if !self.ledger.is_account_declared(account) {
+			let date = self.ledger_date();
+			self.result
+				.undeclared_accounts
+				.entry(account.to_string())
+				.or_insert(date);
+		}
+		let outcome = self.ledger.check_account(account);
+		self.soft(outcome, Some(at))
+	}
+
+	fn check_currency(
+		&mut self,
+		currency: &str,
+		at: Span,
+	) -> Result<(), Error> {
+		if self.ledger.is_lenient() {
+			return Ok(());
+		}
+		if !self.ledger.is_currency_declared(currency) {
+			let date = self.ledger_date();
+			self.result
+				.undeclared_currencies
+				.entry(currency.to_string())
+				.or_insert(date);
+		}
+		let outcome = self.ledger.check_currency(currency);
+		self.soft(outcome, Some(at))
+	}
+
+	/// The date of the entry being built
+	fn ledger_date(&self) -> Date {
+		self.pending_date.unwrap_or_default()
+	}
+
+	fn directives(
+		&mut self,
+		items: &[Item],
+		ignore_after: &Date,
+	) -> Result<(), Error> {
+		for item in items {
+			let Item::Line { file, number, line } = item else {
+				continue;
+			};
+			let LineKind::Directive(d) = &line.kind else {
+				continue;
+			};
+			if &d.date > ignore_after {
+				continue;
+			}
+
+			let at = span(*file, *number, d.args);
+			let date = d.date;
+			let ledger = &mut *self.ledger;
+			let outcome = match &d.directive {
+				Directive::Account(account) => {
+					ledger.declare_account(account.clone(), date)
+				},
+				Directive::Open(account) => {
+					ledger.declare_account_open(account.clone(), date)
+				},
+				Directive::Close(account) => {
+					ledger.declare_account_closure(account.clone(), date)
+				},
+				Directive::Currency(currency) => {
+					ledger.declare_currency(currency, date)
+				},
+				Directive::Clear(currency) => {
+					ledger.declare_clear(currency.clone(), date);
+					Ok(())
+				},
+				Directive::Worthless(currency) => {
+					ledger.exchange_rates.declare_worthless(currency.clone());
+					Ok(())
+				},
+				Directive::Rate {
+					base, quote, rate, ..
+				} => ledger
+					.exchange_rates
+					.add_rate(
+						date,
+						base.clone(),
+						quote.clone(),
+						*rate,
+						ObservationType::Declared,
+					)
+					.map(|_| ()),
+			};
+			self.soft(outcome, Some(at))?;
+		}
+		Ok(())
+	}
+
+	fn entries(
+		&mut self,
+		items: &[Item],
+		ignore_after: &Date,
+	) -> Result<(), Error> {
+		// Entries dated after the end of the range are skipped along with
+		// everything that belongs to them
+		let mut skipping = false;
+		// Kept to sort entries on some reports in the order they appear,
+		// second only to their date
+		let mut entry_count = 0;
+
+		for item in items {
+			let (file, number, line) = match item {
+				Item::EndOfFile(_) => {
+					self.finish()?;
+					continue;
+				},
+				Item::Line { file, number, line } => (*file, *number, line),
+			};
+			let whole_line = Span::new(file, number, 0, 0);
+
+			match &line.kind {
+				LineKind::Blank => self.finish()?,
+				LineKind::CommentOnly
+				| LineKind::Include(_)
+				| LineKind::Directive(_) => {},
+				LineKind::Reference(reference) => {
+					if skipping {
+						continue;
+					}
+					if !self.ledger.has_pending_entry() {
+						return Err(
+							outside_entry("Reference", whole_line).into()
+						);
+					}
+					self.ledger.extend_pending_span(whole_line);
+					if !reference.is_empty() {
+						self.ledger.add_reference(reference.clone())?;
+					}
+				},
+				LineKind::Header(header) => {
+					self.finish()?;
+					skipping = &header.date > ignore_after;
+					if skipping {
+						continue;
+					}
+					self.ledger
+						.new_entry(
+							header.date,
+							header.description.clone(),
+							entry_count,
+						)
+						.locate(whole_line)?;
+					self.pending_date = Some(header.date);
+					self.ledger.extend_pending_span(whole_line);
+					entry_count += 1;
+					self.result.note_date(header.date);
+				},
+				LineKind::Posting(posting) => {
+					if skipping {
+						continue;
+					}
+					if !self.ledger.has_pending_entry() {
+						return Err(outside_entry("Posting", whole_line).into());
+					}
+					self.ledger.extend_pending_span(whole_line);
+					self.posting(posting, file, number)?;
+				},
+			}
+		}
+
+		self.finish()
+	}
+
+	fn posting(
+		&mut self,
+		posting: &Posting,
+		file: FileId,
+		number: usize,
+	) -> Result<(), Error> {
+		let account = posting.account.clone();
+		let account_at = span(file, number, posting.account_cols);
+		let line_at = Span::new(file, number, 0, 0);
+
+		self.check_account(&account, account_at)?;
+
+		let Some(a) = &posting.amount else {
+			return self.ledger.set_virtual_detail(account).locate(account_at);
+		};
+
+		self.check_currency(&a.currency, span(file, number, a.cols))?;
+		let amount = Amount::new(a.value, &a.currency);
+		self.result
+			.note_precision(&a.currency, a.value.render_precision());
+
+		if let Some(lot) = &a.lot {
+			self.result
+				.note_precision(&lot.currency, lot.cost.render_precision());
+			self.check_currency(&lot.currency, span(file, number, lot.cols))?;
+
+			// The purchase of a lot implies an exchange rate for that lot on
+			// that date, with its cost basis. The sale of a lot does not.
+			let cost_basis = Amount::new(lot.cost, &lot.currency);
+			let implied_conversion = (a.value > 0).then(|| cost_basis.clone());
+			return self
+				.ledger
+				.add_detail(
+					account,
+					amount,
+					implied_conversion,
+					Some(cost_basis),
+					lot.name.clone(),
+				)
+				.locate(line_at);
+		}
+
+		if let Some(price) = &a.price {
+			self.result.note_precision(
+				&price.currency,
+				price.value.render_precision(),
+			);
+			self.check_currency(
+				&price.currency,
+				span(file, number, price.cols),
+			)?;
+
+			// A total price is for the whole amount, whichever way it moves
+			let unit_price = if price.is_total {
+				price.value / a.value.abs()
+			} else {
+				price.value
+			};
+			return self
+				.ledger
+				.add_detail(
+					account,
+					amount,
+					Some(Amount::new(unit_price, &price.currency)),
+					None,
+					None,
+				)
+				.locate(line_at);
+		}
+
+		self.ledger
+			.add_detail(account, amount, None, None, None)
+			.locate(line_at)
+	}
+}
+
+fn outside_entry(what: &str, at: Span) -> Diagnostic {
+	Diagnostic::error(format!("{what} outside of an entry"))
+		.at(at)
+		.help(
+			"entries begin with a date and description, and a blank line ends them",
+		)
 }

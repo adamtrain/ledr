@@ -1,0 +1,1639 @@
+# A year in the life of a made-up person, for trying ledr out.
+#
+#   ledr -f examples/demo.ledr bs
+#   ledr -f examples/demo.ledr is -P 2026-08 -i
+#   ledr -f examples/demo.ledr ugl
+
+! 2025-09-01 currency USD
+! 2025-09-01 currency CAD
+! 2025-09-01 currency VTI
+! 2025-09-01 currency AAPL
+! 2025-09-01 currency BTC
+
+! 2025-09-01 account Assets:Checking
+! 2025-09-01 account Assets:Savings
+! 2025-09-01 account Assets:Brokerage
+! 2025-09-01 account Assets:Crypto
+! 2025-09-01 account Liabilities:Visa
+! 2025-09-01 account Liabilities:StudentLoan
+! 2025-09-01 account Income:Salary
+! 2025-09-01 account Income:Interest
+! 2025-09-01 account Income:Dividends
+! 2025-09-01 account Expenses:Housing:Rent
+! 2025-09-01 account Expenses:Housing:Utilities
+! 2025-09-01 account Expenses:Food:Groceries
+! 2025-09-01 account Expenses:Food:Coffee
+! 2025-09-01 account Expenses:Food:Restaurants
+! 2025-09-01 account Expenses:Transport
+! 2025-09-01 account Expenses:Travel
+! 2025-09-01 account Expenses:Fun
+! 2025-09-01 account Expenses:Health
+! 2025-09-01 account Expenses:Fees
+! 2025-09-01 account Expenses:Interest
+! 2025-09-01 account Equity:OpeningBalances
+
+2025-09-01 Opening balances
+    Assets:Checking             4,210.55 USD
+    Assets:Savings             12,500.00 USD
+    Liabilities:StudentLoan   -18,400.00 USD
+    Equity:OpeningBalances
+
+2025-09-02 Buy index fund
+    Assets:Brokerage       20 VTI { 271.40 USD, "first buy" }
+    Assets:Checking
+
+2025-09-03 Buy Apple
+    Assets:Brokerage       10 AAPL { 229.87 USD }
+    Assets:Checking
+
+2025-09-05 Buy bitcoin
+    Assets:Crypto          0.05 BTC @@ 5,550.00 USD
+    Assets:Checking
+
+2025-09-06 Whole Foods
+    Expenses:Food:Groceries    154.53 USD
+    Liabilities:Visa
+
+2025-09-08 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-09-09 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2025-09-11 Sushi Nami
+    Expenses:Food:Restaurants     21.32 USD
+    Liabilities:Visa
+
+2025-09-12 City Power & Water
+    Expenses:Housing:Utilities    124.53 USD
+    Assets:Checking
+
+2025-09-12 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-09-13 Farmers market
+    Expenses:Food:Groceries    140.69 USD
+    Liabilities:Visa
+
+2025-09-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2025-09-15 Pho Saigon
+    Expenses:Food:Restaurants     59.47 USD
+    Liabilities:Visa
+
+2025-09-15 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-09-17 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-09-20 Pay Visa bill
+    Liabilities:Visa    439.26 USD
+    Assets:Checking
+
+2025-09-20 Trader Joe's
+    Expenses:Food:Groceries    108.75 USD
+    Liabilities:Visa
+
+2025-09-22 Luigi's Pizza
+    Expenses:Food:Restaurants     40.79 USD
+    Liabilities:Visa
+
+2025-09-22 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-09-23 Pho Saigon
+    Expenses:Food:Restaurants     81.29 USD
+    Liabilities:Visa
+
+2025-09-24 Luigi's Pizza
+    Expenses:Food:Restaurants     61.36 USD
+    Liabilities:Visa
+
+2025-09-25 Dividend, VTI
+    Assets:Brokerage     24.01 USD
+    Income:Dividends
+
+2025-09-26 Blue Bottle
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-09-27 Trader Joe's
+    Expenses:Food:Groceries     77.91 USD
+    Liabilities:Visa
+
+2025-09-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2025-09-28 Savings interest
+    Assets:Savings      43.57 USD
+    Income:Interest
+
+2025-09-29 Blue Bottle
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2025-09-29 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-10-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2025-10-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2025-10-02 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-10-02 Concert tickets
+    Expenses:Fun         42.59 USD
+    Liabilities:Visa
+
+2025-10-03 Blue Bottle
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2025-10-04 Trader Joe's
+    Expenses:Food:Groceries    127.50 USD
+    Liabilities:Visa
+
+2025-10-07 Blue Bottle
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2025-10-07 Sushi Nami
+    Expenses:Food:Restaurants     22.17 USD
+    Liabilities:Visa
+
+2025-10-08 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2025-10-09 Tim Hortons
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2025-10-09 Luigi's Pizza
+    Expenses:Food:Restaurants     59.12 USD
+    Liabilities:Visa
+
+2025-10-10 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-10-11 Farmers market
+    Expenses:Food:Groceries     93.24 USD
+    Liabilities:Visa
+
+2025-10-12 City Power & Water
+    Expenses:Housing:Utilities    159.45 USD
+    Assets:Checking
+
+2025-10-13 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-10-13 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-10-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2025-10-15 Corner Café
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2025-10-16 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2025-10-17 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-10-18 Farmers market
+    Expenses:Food:Groceries     89.61 USD
+    Liabilities:Visa
+
+2025-10-20 Pay Visa bill
+    Liabilities:Visa    943.48 USD
+    Assets:Checking
+
+2025-10-21 Movie night
+    Expenses:Fun         97.96 USD
+    Liabilities:Visa
+
+2025-10-23 Corner Café
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-10-24 Tim Hortons
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2025-10-25 Farmers market
+    Expenses:Food:Groceries    158.45 USD
+    Liabilities:Visa
+
+2025-10-25 Board game café
+    Expenses:Fun         98.96 USD
+    Liabilities:Visa
+
+2025-10-26 Pho Saigon
+    Expenses:Food:Restaurants     78.96 USD
+    Liabilities:Visa
+
+2025-10-27 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-10-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2025-10-28 Savings interest
+    Assets:Savings      42.66 USD
+    Income:Interest
+
+2025-10-29 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-10-30 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-11-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2025-11-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2025-11-01 Farmers market
+    Expenses:Food:Groceries     68.75 USD
+    Liabilities:Visa
+
+2025-11-01 Pho Saigon
+    Expenses:Food:Restaurants     53.28 USD
+    Liabilities:Visa
+
+2025-11-03 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-11-04 Corner Café
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-11-05 Corner Café
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-11-08 Farmers market
+    Expenses:Food:Groceries     56.96 USD
+    Liabilities:Visa
+
+2025-11-09 Taqueria El Sol
+    Expenses:Food:Restaurants     29.55 USD
+    Liabilities:Visa
+
+2025-11-10 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-11-12 City Power & Water
+    Expenses:Housing:Utilities    124.82 USD
+    Assets:Checking
+
+2025-11-12 Blue Bottle
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2025-11-14 Corner Café
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2025-11-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2025-11-15 Whole Foods
+    Expenses:Food:Groceries    102.50 USD
+    Liabilities:Visa
+
+2025-11-17 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-11-19 Blue Bottle
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-11-19 Taqueria El Sol
+    Expenses:Food:Restaurants     46.70 USD
+    Liabilities:Visa
+
+2025-11-20 Pay Visa bill
+    Liabilities:Visa    937.87 USD
+    Assets:Checking
+
+2025-11-20 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-11-21 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-11-22 Trader Joe's
+    Expenses:Food:Groceries     96.82 USD
+    Liabilities:Visa
+
+2025-11-24 Corner Café
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2025-11-24 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-11-25 Sushi Nami
+    Expenses:Food:Restaurants     47.51 USD
+    Liabilities:Visa
+
+2025-11-25 Board game café
+    Expenses:Fun         69.33 USD
+    Liabilities:Visa
+
+2025-11-26 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2025-11-27 Luigi's Pizza
+    Expenses:Food:Restaurants     36.22 USD
+    Liabilities:Visa
+
+2025-11-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2025-11-28 Savings interest
+    Assets:Savings      40.54 USD
+    Income:Interest
+
+2025-11-29 Farmers market
+    Expenses:Food:Groceries    140.99 USD
+    Liabilities:Visa
+
+2025-12-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2025-12-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2025-12-01 Pho Saigon
+    Expenses:Food:Restaurants     71.57 USD
+    Liabilities:Visa
+
+2025-12-01 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-12-02 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2025-12-03 Pho Saigon
+    Expenses:Food:Restaurants     48.40 USD
+    Liabilities:Visa
+
+2025-12-05 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-12-06 Whole Foods
+    Expenses:Food:Groceries     60.29 USD
+    Liabilities:Visa
+
+2025-12-08 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-12-09 Tim Hortons
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2025-12-12 City Power & Water
+    Expenses:Housing:Utilities    146.77 USD
+    Assets:Checking
+
+2025-12-12 Corner Café
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-12-13 Whole Foods
+    Expenses:Food:Groceries     75.86 USD
+    Liabilities:Visa
+
+2025-12-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2025-12-15 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2025-12-19 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-12-19 Board game café
+    Expenses:Fun        115.99 USD
+    Liabilities:Visa
+
+2025-12-20 Pay Visa bill
+    Liabilities:Visa    886.23 USD
+    Assets:Checking
+
+2025-12-20 Farmers market
+    Expenses:Food:Groceries     88.97 USD
+    Liabilities:Visa
+
+2025-12-20 Luigi's Pizza
+    Expenses:Food:Restaurants     32.60 USD
+    Liabilities:Visa
+
+2025-12-22 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2025-12-24 Blue Bottle
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-12-25 Dividend, VTI
+    Assets:Brokerage     25.36 USD
+    Income:Dividends
+
+2025-12-27 Farmers market
+    Expenses:Food:Groceries    158.40 USD
+    Liabilities:Visa
+
+2025-12-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2025-12-28 Savings interest
+    Assets:Savings      47.01 USD
+    Income:Interest
+
+2025-12-28 Sushi Nami
+    Expenses:Food:Restaurants     67.17 USD
+    Liabilities:Visa
+
+2025-12-29 Corner Café
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2025-12-29 Concert tickets
+    Expenses:Fun         23.93 USD
+    Liabilities:Visa
+
+2025-12-30 Corner Café
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2025-12-31 Pho Saigon
+    Expenses:Food:Restaurants     59.96 USD
+    Liabilities:Visa
+
+2026-01-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-01-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-01-01 Pho Saigon
+    Expenses:Food:Restaurants     68.13 USD
+    Liabilities:Visa
+
+2026-01-03 Farmers market
+    Expenses:Food:Groceries    104.76 USD
+    Liabilities:Visa
+
+2026-01-05 Corner Café
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-01-05 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-01-07 Taqueria El Sol
+    Expenses:Food:Restaurants     40.23 USD
+    Liabilities:Visa
+
+2026-01-10 Trader Joe's
+    Expenses:Food:Groceries    127.68 USD
+    Liabilities:Visa
+
+2026-01-12 City Power & Water
+    Expenses:Housing:Utilities    117.31 USD
+    Assets:Checking
+
+2026-01-12 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-01-12 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-01-13 Tim Hortons
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-01-14 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-01-14 Pho Saigon
+    Expenses:Food:Restaurants     27.50 USD
+    Liabilities:Visa
+
+2026-01-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-01-17 Trader Joe's
+    Expenses:Food:Groceries    107.28 USD
+    Liabilities:Visa
+
+2026-01-20 Pay Visa bill
+    Liabilities:Visa    998.86 USD
+    Assets:Checking
+
+2026-01-20 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-01-20 Luigi's Pizza
+    Expenses:Food:Restaurants     74.22 USD
+    Liabilities:Visa
+
+2026-01-22 Blue Bottle
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-01-24 Whole Foods
+    Expenses:Food:Groceries    144.70 USD
+    Liabilities:Visa
+
+2026-01-26 Blue Bottle
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-01-26 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-01-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-01-28 Savings interest
+    Assets:Savings      46.83 USD
+    Income:Interest
+
+2026-01-29 Sushi Nami
+    Expenses:Food:Restaurants     48.21 USD
+    Liabilities:Visa
+
+2026-01-31 Farmers market
+    Expenses:Food:Groceries     68.37 USD
+    Liabilities:Visa
+
+2026-02-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-02-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-02-04 Tim Hortons
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-02-05 Blue Bottle
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-02-06 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-02-07 Whole Foods
+    Expenses:Food:Groceries     82.13 USD
+    Liabilities:Visa
+
+2026-02-09 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-02-09 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-02-10 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-02-12 City Power & Water
+    Expenses:Housing:Utilities    151.74 USD
+    Assets:Checking
+
+2026-02-12 Corner Café
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-02-14 Whole Foods
+    Expenses:Food:Groceries    129.50 USD
+    Liabilities:Visa
+
+2026-02-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-02-15 Bookstore
+    Expenses:Fun        112.68 USD
+    Liabilities:Visa
+
+2026-02-16 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-02-18 Sushi Nami
+    Expenses:Food:Restaurants     23.70 USD
+    Liabilities:Visa
+
+2026-02-19 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-02-19 Board game café
+    Expenses:Fun        116.06 USD
+    Liabilities:Visa
+
+2026-02-20 Pay Visa bill
+    Liabilities:Visa    926.17 USD
+    Assets:Checking
+
+2026-02-21 Trader Joe's
+    Expenses:Food:Groceries     65.44 USD
+    Liabilities:Visa
+
+2026-02-23 Luigi's Pizza
+    Expenses:Food:Restaurants     84.76 USD
+    Liabilities:Visa
+
+2026-02-23 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-02-25 Sushi Nami
+    Expenses:Food:Restaurants     65.21 USD
+    Liabilities:Visa
+
+2026-02-26 Blue Bottle
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-02-26 Taqueria El Sol
+    Expenses:Food:Restaurants     62.71 USD
+    Liabilities:Visa
+
+2026-02-27 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-02-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-02-28 Savings interest
+    Assets:Savings      43.55 USD
+    Income:Interest
+
+2026-02-28 Trader Joe's
+    Expenses:Food:Groceries    138.69 USD
+    Liabilities:Visa
+
+2026-03-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-03-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-03-02 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-03-02 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-03-03 Corner Café
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-03-06 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-03-07 Trader Joe's
+    Expenses:Food:Groceries     96.30 USD
+    Liabilities:Visa
+
+2026-03-09 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-03-10 Sushi Nami
+    Expenses:Food:Restaurants     74.22 USD
+    Liabilities:Visa
+
+2026-03-10 Buy more index fund
+    Assets:Brokerage  15 VTI { 289.95 USD }
+    Assets:Checking
+
+2026-03-11 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-03-11 Pho Saigon
+    Expenses:Food:Restaurants     41.55 USD
+    Liabilities:Visa
+
+2026-03-12 City Power & Water
+    Expenses:Housing:Utilities     89.90 USD
+    Assets:Checking
+
+2026-03-14 Trader Joe's
+    Expenses:Food:Groceries    129.05 USD
+    Liabilities:Visa
+
+2026-03-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-03-19 Tim Hortons
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-03-20 Pay Visa bill
+    Liabilities:Visa    869.18 USD
+    Assets:Checking
+
+2026-03-21 Farmers market
+    Expenses:Food:Groceries    127.41 USD
+    Liabilities:Visa
+
+2026-03-23 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-03-24 Corner Café
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-03-25 Blue Bottle
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-03-25 Dividend, VTI
+    Assets:Brokerage     20.05 USD
+    Income:Dividends
+
+2026-03-27 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-03-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-03-28 Savings interest
+    Assets:Savings      48.97 USD
+    Income:Interest
+
+2026-03-28 Farmers market
+    Expenses:Food:Groceries     63.30 USD
+    Liabilities:Visa
+
+2026-03-30 Corner Café
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-04-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-04-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-04-01 Blue Bottle
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-04-04 Whole Foods
+    Expenses:Food:Groceries     85.85 USD
+    Liabilities:Visa
+
+2026-04-06 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-04-07 Blue Bottle
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-04-08 Tim Hortons
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-04-10 Luigi's Pizza
+    Expenses:Food:Restaurants     33.60 USD
+    Liabilities:Visa
+
+2026-04-11 Farmers market
+    Expenses:Food:Groceries    157.16 USD
+    Liabilities:Visa
+
+2026-04-12 City Power & Water
+    Expenses:Housing:Utilities    109.78 USD
+    Assets:Checking
+
+2026-04-13 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-04-13 Luigi's Pizza
+    Expenses:Food:Restaurants     32.58 USD
+    Liabilities:Visa
+
+2026-04-13 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-04-14 Blue Bottle
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-04-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-04-15 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-04-16 Pho Saigon
+    Expenses:Food:Restaurants     71.28 USD
+    Liabilities:Visa
+
+2026-04-17 Tim Hortons
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-04-18 Farmers market
+    Expenses:Food:Groceries     64.57 USD
+    Liabilities:Visa
+
+2026-04-20 Pay Visa bill
+    Liabilities:Visa    749.20 USD
+    Assets:Checking
+
+2026-04-20 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-04-21 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-04-23 Tim Hortons
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-04-25 Trader Joe's
+    Expenses:Food:Groceries    122.27 USD
+    Liabilities:Visa
+
+2026-04-27 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-04-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-04-28 Savings interest
+    Assets:Savings      50.96 USD
+    Income:Interest
+
+2026-04-28 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-04-29 Blue Bottle
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-04-29 Sushi Nami
+    Expenses:Food:Restaurants     23.78 USD
+    Liabilities:Visa
+
+2026-05-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-05-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-05-02 Trader Joe's
+    Expenses:Food:Groceries    142.06 USD
+    Liabilities:Visa
+
+2026-05-04 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-05-04 Sell some Apple
+    Assets:Brokerage  -4 AAPL { 229.87 USD }
+    Assets:Brokerage  1,006.40 USD
+
+2026-05-05 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-05-06 Blue Bottle
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-05-08 Blue Bottle
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-05-09 Trader Joe's
+    Expenses:Food:Groceries    119.98 USD
+    Liabilities:Visa
+
+2026-05-11 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-05-12 City Power & Water
+    Expenses:Housing:Utilities     90.28 USD
+    Assets:Checking
+
+2026-05-12 Tim Hortons
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-05-13 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-05-14 Sushi Nami
+    Expenses:Food:Restaurants     61.73 USD
+    Liabilities:Visa
+
+2026-05-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-05-15 Tim Hortons
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-05-16 Trader Joe's
+    Expenses:Food:Groceries     68.82 USD
+    Liabilities:Visa
+
+2026-05-18 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-05-20 Pay Visa bill
+    Liabilities:Visa    675.89 USD
+    Assets:Checking
+
+2026-05-21 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-05-22 Blue Bottle
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-05-23 Farmers market
+    Expenses:Food:Groceries    153.32 USD
+    Liabilities:Visa
+
+2026-05-25 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-05-25 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-05-27 Corner Café
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-05-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-05-28 Savings interest
+    Assets:Savings      43.26 USD
+    Income:Interest
+
+2026-05-28 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-05-29 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-05-30 Whole Foods
+    Expenses:Food:Groceries    122.12 USD
+    Liabilities:Visa
+
+2026-06-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-06-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-06-01 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-06-02 Dentist
+    // Cleaning and x-rays; insurance claim #A-4471 pending
+    Expenses:Health     180.00 USD
+    Liabilities:Visa
+
+2026-06-03 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-06-03 Pho Saigon
+    Expenses:Food:Restaurants     56.00 USD
+    Liabilities:Visa
+
+2026-06-05 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-06-06 Trader Joe's
+    Expenses:Food:Groceries     69.15 USD
+    Liabilities:Visa
+
+2026-06-09 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-06-10 Corner Café
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-06-12 City Power & Water
+    Expenses:Housing:Utilities     83.52 USD
+    Assets:Checking
+
+2026-06-13 Trader Joe's
+    Expenses:Food:Groceries    150.73 USD
+    Liabilities:Visa
+
+2026-06-13 Taqueria El Sol
+    Expenses:Food:Restaurants     27.53 USD
+    Liabilities:Visa
+
+2026-06-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-06-15 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-06-16 Tim Hortons
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-06-16 Bookstore
+    Expenses:Fun         93.24 USD
+    Liabilities:Visa
+
+2026-06-18 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-06-18 Board game café
+    Expenses:Fun        108.58 USD
+    Liabilities:Visa
+
+2026-06-20 Pay Visa bill
+    Liabilities:Visa  1,073.52 USD
+    Assets:Checking
+
+2026-06-20 Trader Joe's
+    Expenses:Food:Groceries     82.93 USD
+    Liabilities:Visa
+
+2026-06-20 Brokerage fee
+    Expenses:Fees         4.95 USD
+    Assets:Brokerage
+
+2026-06-22 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-06-22 Pho Saigon
+    Expenses:Food:Restaurants     29.37 USD
+    Liabilities:Visa
+
+2026-06-23 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-06-25 Dividend, VTI
+    Assets:Brokerage     23.22 USD
+    Income:Dividends
+
+2026-06-26 Movie night
+    Expenses:Fun         60.91 USD
+    Liabilities:Visa
+
+2026-06-27 Farmers market
+    Expenses:Food:Groceries     79.55 USD
+    Liabilities:Visa
+
+2026-06-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-06-28 Savings interest
+    Assets:Savings      43.48 USD
+    Income:Interest
+
+2026-06-29 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-06-29 Taqueria El Sol
+    Expenses:Food:Restaurants     41.11 USD
+    Liabilities:Visa
+
+2026-06-29 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-06-29 Movie night
+    Expenses:Fun         29.53 USD
+    Liabilities:Visa
+
+2026-06-30 Pho Saigon
+    Expenses:Food:Restaurants     67.36 USD
+    Liabilities:Visa
+
+2026-07-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-07-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-07-04 Trader Joe's
+    Expenses:Food:Groceries     80.89 USD
+    Liabilities:Visa
+
+2026-07-04 Movie night
+    Expenses:Fun        101.63 USD
+    Liabilities:Visa
+
+2026-07-06 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-07-06 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-07-07 Blue Bottle
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-07-08 Corner Café
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-07-09 Movie night
+    Expenses:Fun         51.41 USD
+    Liabilities:Visa
+
+2026-07-10 Flight to Montreal
+    Expenses:Travel     412.60 USD
+    Liabilities:Visa
+
+2026-07-11 Trader Joe's
+    Expenses:Food:Groceries    115.33 USD
+    Liabilities:Visa
+
+2026-07-11 Currency exchange
+    // Airport kiosk, awful rate
+    Assets:Checking   -500.00 USD
+    Assets:Checking    681.25 CAD
+
+2026-07-11 Hotel Le Germain
+    Expenses:Travel     689.00 CAD
+    Liabilities:Visa   -503.15 USD
+
+2026-07-12 City Power & Water
+    Expenses:Housing:Utilities    121.88 USD
+    Assets:Checking
+
+2026-07-12 Schwartz's Deli
+    Expenses:Food:Restaurants     58.40 CAD
+    Assets:Checking
+
+2026-07-12 Tim Hortons
+    Expenses:Food:Coffee      4.75 CAD
+    Assets:Checking
+
+2026-07-13 Blue Bottle
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-07-13 Taqueria El Sol
+    Expenses:Food:Restaurants     82.80 USD
+    Liabilities:Visa
+
+2026-07-13 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-07-13 Jean-Talon Market
+    Expenses:Food:Groceries     38.90 CAD
+    Assets:Checking
+
+2026-07-13 Bixi bikes
+    Expenses:Transport     17.50 CAD
+    Assets:Checking
+
+2026-07-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-07-16 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-07-17 Luigi's Pizza
+    Expenses:Food:Restaurants     41.83 USD
+    Liabilities:Visa
+
+2026-07-18 Whole Foods
+    Expenses:Food:Groceries    148.64 USD
+    Liabilities:Visa
+
+2026-07-20 Pay Visa bill
+    Liabilities:Visa  1,539.89 USD
+    Assets:Checking
+
+2026-07-20 Blue Bottle
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-07-20 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-07-21 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-07-23 Tim Hortons
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-07-24 Blue Bottle
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-07-25 Whole Foods
+    Expenses:Food:Groceries    122.48 USD
+    Liabilities:Visa
+
+2026-07-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-07-28 Savings interest
+    Assets:Savings      48.12 USD
+    Income:Interest
+
+2026-07-31 Tim Hortons
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-08-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-08-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-08-01 Whole Foods
+    Expenses:Food:Groceries     83.75 USD
+    Liabilities:Visa
+
+2026-08-01 Pho Saigon
+    Expenses:Food:Restaurants     36.81 USD
+    Liabilities:Visa
+
+2026-08-02 Bookstore
+    Expenses:Fun         87.81 USD
+    Liabilities:Visa
+
+2026-08-03 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-08-08 Farmers market
+    Expenses:Food:Groceries    116.29 USD
+    Liabilities:Visa
+
+2026-08-10 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-08-10 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-08-12 City Power & Water
+    Expenses:Housing:Utilities    118.62 USD
+    Assets:Checking
+
+2026-08-12 Blue Bottle
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-08-13 Corner Café
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-08-14 Concert tickets
+    Expenses:Fun         31.89 USD
+    Liabilities:Visa
+
+2026-08-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-08-15 Trader Joe's
+    Expenses:Food:Groceries    109.52 USD
+    Liabilities:Visa
+
+2026-08-15 Sushi Nami
+    Expenses:Food:Restaurants     54.25 USD
+    Liabilities:Visa
+
+2026-08-17 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-08-18 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-08-19 Corner Café
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-08-20 Pay Visa bill
+    Liabilities:Visa    794.40 USD
+    Assets:Checking
+
+2026-08-20 Tim Hortons
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-08-20 Sushi Nami
+    Expenses:Food:Restaurants     60.11 USD
+    Liabilities:Visa
+
+2026-08-21 Luigi's Pizza
+    Expenses:Food:Restaurants     67.68 USD
+    Liabilities:Visa
+
+2026-08-22 Farmers market
+    Expenses:Food:Groceries    157.01 USD
+    Liabilities:Visa
+
+2026-08-24 Taqueria El Sol
+    Expenses:Food:Restaurants     49.43 USD
+    Liabilities:Visa
+
+2026-08-24 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-08-27 Corner Café
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-08-28 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-08-28 Savings interest
+    Assets:Savings      48.97 USD
+    Income:Interest
+
+2026-08-28 Corner Café
+    Expenses:Food:Coffee      5.75 USD
+    Liabilities:Visa
+
+2026-08-29 Farmers market
+    Expenses:Food:Groceries     74.52 USD
+    Liabilities:Visa
+
+2026-08-29 Luigi's Pizza
+    Expenses:Food:Restaurants     41.98 USD
+    Liabilities:Visa
+
+2026-08-31 Luigi's Pizza
+    Expenses:Food:Restaurants     28.23 USD
+    Liabilities:Visa
+
+2026-08-31 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-09-01 Rent, Maple St apartment
+    Expenses:Housing:Rent  1,850.00 USD
+    Assets:Checking
+
+2026-09-01 Student loan payment
+    Liabilities:StudentLoan    400.00 USD
+    Expenses:Interest           62.18 USD
+    Assets:Checking
+
+2026-09-01 Corner Café
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-09-02 Movie night
+    Expenses:Fun         37.02 USD
+    Liabilities:Visa
+
+2026-09-03 Blue Bottle
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-09-05 Trader Joe's
+    Expenses:Food:Groceries     76.90 USD
+    Liabilities:Visa
+
+2026-09-07 Luigi's Pizza
+    Expenses:Food:Restaurants     31.22 USD
+    Liabilities:Visa
+
+2026-09-10 Blue Bottle
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-09-10 Sushi Nami
+    Expenses:Food:Restaurants     78.67 USD
+    Liabilities:Visa
+
+2026-09-11 Tim Hortons
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-09-12 City Power & Water
+    Expenses:Housing:Utilities     92.83 USD
+    Assets:Checking
+
+2026-09-12 Whole Foods
+    Expenses:Food:Groceries    104.14 USD
+    Liabilities:Visa
+
+2026-09-14 Corner Café
+    Expenses:Food:Coffee      4.25 USD
+    Liabilities:Visa
+
+2026-09-14 Transit pass top-up
+    Expenses:Transport     25.00 USD
+    Liabilities:Visa
+
+2026-09-15 Paycheck, Acme Corp
+    Assets:Checking  3,412.77 USD
+    Assets:Savings     500.00 USD
+    Income:Salary
+
+2026-09-15 Tim Hortons
+    Expenses:Food:Coffee      5.10 USD
+    Liabilities:Visa
+
+2026-09-17 Blue Bottle
+    Expenses:Food:Coffee      4.50 USD
+    Liabilities:Visa
+
+2026-09-18 Blue Bottle
+    Expenses:Food:Coffee      6.40 USD
+    Liabilities:Visa
+
+2026-09-19 Whole Foods
+    Expenses:Food:Groceries    100.69 USD
+    Liabilities:Visa
+
+2026-09-20 Pay Visa bill
+    Liabilities:Visa  1,040.35 USD
+    Assets:Checking
+
+! 2026-09-20 rate VTI USD 301.12
+! 2026-09-20 rate AAPL USD 247.30
+! 2026-09-20 rate BTC USD 115,420.00
+! 2026-09-20 rate CAD USD 0.7210

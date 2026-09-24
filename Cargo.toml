@@ -1,4 +1,4 @@
-# Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+# Copyright © 2024-2026 Adam Train <adam@adametrain.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,25 +15,46 @@
 
 [package]
 name = "ledr"
-version = "2.1.6"
+version = "3.0.0"
 authors = ["Adam Train"]
-edition = "2021"
+edition = "2024"
+rust-version = "1.88"
 description = "Plain text accounting tool"
 readme = "README.md"
 repository = "https://github.com/adamtrain/ledr"
-license = "GPL-3"
+license = "GPL-3.0-or-later"
+keywords = ["accounting", "ledger", "plaintext", "finance", "cli"]
+categories = ["command-line-utilities", "finance"]
 
 [lints.rust]
 unsafe_code = "forbid"
 
+[lints.clippy]
+# Diagnostics carry spans, notes and help, so they're larger than clippy
+# likes in a Result. They are only built when something has gone wrong, where
+# clarity matters far more than a few bytes.
+result_large_err = "allow"
+
 [dependencies]
 anyhow = "1.0.100"
 chrono = "0.4.42"
-clap = { version = "4.5.53", features = ["derive"] }
-dirs = "6.0.0"
-rand = "0.9.0"
+clap = { version = "4.5.53", features = ["derive", "env", "wrap_help"] }
+clap_complete = "4.5"
+inquire = { version = "0.9.4", default-features = false, features = ["crossterm"] }
 regex = "1.12.2"
-reqwest = { version = "0.12.26", features = ["blocking", "json"] }
-serde = { version = "1.0.228", features = ["derive"] }
-toml = "0.9.10"
-serde_json = "1.0.146"
+similar = "3.2"
+terminal_size = "0.4"
+unicode-width = "0.2"
+
+[dev-dependencies]
+num-bigint = "0.4"
+num-rational = { version = "0.4", features = ["num-bigint"] }
+rand = "0.9.0"
+tempfile = "3"
+
+[profile.release]
+# Money math must never silently wrap. Overflow anywhere in the rational
+# arithmetic becomes a loud, explained failure instead of a wrong number.
+overflow-checks = true
+lto = "thin"
+strip = true

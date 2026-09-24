@@ -1,0 +1,6 @@
+◇ 1 entry · matching “tim”
+
+2024-11-02 Tim Hortons
+    Expenses:Food:Coffee   4.50 USD
+    Liabilities:Visa      -4.50 USD
+

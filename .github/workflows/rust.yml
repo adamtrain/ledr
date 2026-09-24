@@ -11,16 +11,20 @@ env:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
     - name: build
-      run: cargo build
+      run: cargo build --all-targets
     - name: test
       run: cargo test
     - name: lint
-      run: cargo clippy -- -D warnings
+      run: cargo clippy --all-targets -- -D warnings
     - name: format
       run: cargo fmt --check
+    - name: license headers
+      run: make check-gpl

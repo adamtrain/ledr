@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ const VIRTUAL_ROUNDING_ERROR_ACCOUNT: &str = "Equity:Rounding";
 use crate::gl::entry::Detail;
 use crate::gl::exchange_rates::ExchangeRates;
 use crate::gl::ledger::Ledger;
-use crate::util::amount::Amount;
+use crate::util::amount::{Amount, DEFAULT_PRECISION};
 use crate::util::quant::Quant;
 use std::collections::BTreeMap;
 
@@ -117,28 +117,15 @@ impl Total {
 	// -- FILTERS --
 	// -------------
 
-	/// Drops those subtotals not matching the given strs vec, then sums all
-	/// subtotals by currency and updates top-level totals with them.
-	/// Designed for filtering to a subset of the VALID_PREFIXES.
+	/// Drops those subtotals not matching the given strs vec. Designed for
+	/// filtering to a subset of the VALID_PREFIXES. Totals are always summed
+	/// from what remains below, so the top level holds no amounts of its
+	/// own; copying its subtotals' amounts up, as it once did, counted
+	/// postings made directly to a top-level account twice.
 	pub fn filter_top_level(&mut self, strs: Vec<&str>) {
 		self.subtotals
 			.retain(|name, _| strs.contains(&name.as_str()));
-
-		let mut currency_totals: BTreeMap<String, Quant> = BTreeMap::new();
-
-		// Sum subtotals; doesn't need to be recursive because we only
-		// dropped some top-level branches of the hierarchy; what
-		// remains is accurate
-		for subtotal in self.subtotals.values_mut() {
-			for (currency, amount) in &subtotal.amounts {
-				currency_totals
-					.entry(currency.clone())
-					.and_modify(|e| *e += *amount)
-					.or_insert_with(|| *amount);
-			}
-		}
-
-		self.amounts = currency_totals.into_iter().collect();
+		self.amounts.clear();
 	}
 
 	/// Designed for use with currency reports, we convert all totals to
@@ -211,11 +198,18 @@ impl Total {
 	) {
 		// Round off amounts on this
 		for (currency, quant) in self.amounts.iter_mut() {
+			// A currency never written in an amount, e.g. one only in rate
+			// directives, gets the precision asked for, or a default
 			let reso = max_reso_by_currency
 				.get(currency.as_str())
-				.unwrap_or(&max_precision);
+				.copied()
+				.unwrap_or(if max_precision == u32::MAX {
+					DEFAULT_PRECISION
+				} else {
+					max_precision
+				});
 
-			quant.round(*reso.min(&max_precision));
+			quant.round(reso.min(max_precision));
 		}
 
 		// Recursively round down the stack of any subtotals this has.
@@ -384,6 +378,39 @@ mod tests {
 
 		assert_eq!(sales_total.amounts.get("USD"), Some(&Quant::new(-3000, 1)));
 		assert_eq!(rent_total.amounts.get("USD"), Some(&Quant::new(-1000, 1)));
+	}
+
+	#[test]
+	fn test_postings_to_a_top_level_account_count_once() {
+		let mut total = Total::new();
+		total.ingest_details(&vec![
+			Detail::new(
+				"Expenses",
+				Amount::new(Quant::from_i128(50), "USD"),
+				false,
+			),
+			Detail::new(
+				"Assets:Cash",
+				Amount::new(Quant::from_i128(-50), "USD"),
+				false,
+			),
+			Detail::new(
+				"Expenses:Food",
+				Amount::new(Quant::from_i128(20), "USD"),
+				false,
+			),
+			Detail::new(
+				"Assets",
+				Amount::new(Quant::from_i128(-20), "USD"),
+				false,
+			),
+		]);
+		total.filter_top_level(vec!["Assets", "Expenses"]);
+		assert_eq!(total.amounts().get("USD"), Some(&Quant::zero()));
+		assert_eq!(
+			total.subtotals["Expenses"].amounts()["USD"],
+			Quant::from_i128(70)
+		);
 	}
 
 	#[test]

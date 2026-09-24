@@ -1,0 +1,3 @@
+warning: tests/test_data/check/2_in.txt:12: 2024-11-19 Inferred Rate Rejection: implies 1 CAD = 1 USD, but the declared rate is 5
+  help: check the amounts, or the rate directive for this date
+1 warning

@@ -1,6 +1,14 @@
-[2024-11-11 Sale] entry has lot sale netted against nonspecific detail, implying break-even (is this intentional?)
-[2024-11-12 Buy] entry marks the purchase of a lot as the proceeds of another (consider separating these)
-[2024-11-13 Complex Sale] entry has ambiguous proceeds from lot sale
-[2024-11-14 Heinous Exchange Rate] entry implies a negative exchange rate (is this intentional?)
-[2024-11-10]: currency conversion rates on this date are not internally consistent
-Done
+warning: tests/test_data/check/1_in.txt:15: 2024-11-10 Initial Balance: implies 1 BTC = 20,000 USD, but the declared rate is 1
+  help: check the amounts, or the rate directive for this date
+warning: tests/test_data/check/1_in.txt:19: 2024-11-11 Sale: nets a lot sale against a line with no amount, implying it broke even
+  help: if the sale made or lost money, write the proceeds explicitly
+warning: tests/test_data/check/1_in.txt:23: 2024-11-12 Buy: uses the purchase of one lot as the proceeds of another
+  help: consider recording the sale and the purchase separately
+warning: tests/test_data/check/1_in.txt:27: 2024-11-13 Complex Sale: has ambiguous proceeds from a lot sale
+  help: record each lot sale in its own entry, with just the sale and its proceeds
+warning: tests/test_data/check/1_in.txt:32: 2024-11-14 Heinous Exchange Rate: implies a negative exchange rate
+  help: if this is not a short position, check the signs
+warning: Exchange rates on 2024-11-10 are not consistent with each other
+  note: converting around a loop of currencies on this date changes the value by more than 5%
+  help: check the rate directives and conversions on this date
+6 warnings

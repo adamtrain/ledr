@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,8 @@
 use std::fs;
 use std::process::Command;
 
-/// Dynamically collects test cases from a given directory.
+/// Dynamically collects test cases from a given directory: every `N_in.txt`,
+/// paired with its `N_out.txt`. Cases expected to fail have no output file.
 fn collect_test_cases(subfolder: &str) -> Vec<(String, String)> {
 	let dir_path = format!("tests/test_data/{}", subfolder);
 
@@ -41,12 +42,15 @@ fn collect_test_cases(subfolder: &str) -> Vec<(String, String)> {
 		// Pair inputs with corresponding outputs
 		for input_file in inputs {
 			let output_file = input_file.replace("_in.txt", "_out.txt");
-			if outputs.contains(&output_file) {
-				test_cases.push((input_file, output_file));
-			}
+			assert!(
+				outputs.contains(&output_file) || subfolder == "failures",
+				"{subfolder}/{input_file} has no expected output file"
+			);
+			test_cases.push((input_file, output_file));
 		}
 	}
 
+	assert!(!test_cases.is_empty(), "no test cases in {subfolder}");
 	test_cases
 }
 
@@ -200,11 +204,11 @@ fn execute(
 
 		let loc = format!("{}/{}/{}", "tests/test_data", subfolder, input_file);
 
-		let all_args =
-			[vec!["run", "--", "-f", loc.as_str(), cmd], args.clone()].concat();
+		let all_args = [vec!["-f", loc.as_str(), cmd], args.clone()].concat();
 
-		let output = Command::new("cargo")
+		let output = Command::new(env!("CARGO_BIN_EXE_ledr"))
 			.args(all_args)
+			.env("NO_COLOR", "1")
 			.output()
 			.expect("Failed to execute process");
 

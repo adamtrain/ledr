@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,10 @@
 use crate::util::quant::Quant;
 use std::fmt;
 use std::ops::Neg;
+
+/// Decimal places for a currency never seen in the ledger's amounts, such as
+/// one that only appears in rate directives.
+pub const DEFAULT_PRECISION: u32 = 2;
 
 /// A quant value with a currency.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]

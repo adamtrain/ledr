@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,10 @@ pub struct ObservedRate {
 
 	/// Some rates are inferred over a range and have nonspecific date
 	pub date: Option<Date>,
+
+	/// Whether the two currencies traded or were declared directly, rather
+	/// than being connected through others
+	pub direct: bool,
 }
 
 impl ObservedRate {
@@ -32,11 +36,13 @@ impl ObservedRate {
 		rate: Quant,
 		date: Option<Date>,
 		observation_type: ObservationType,
+		direct: bool,
 	) -> Self {
 		Self {
 			rate,
 			date,
 			observation_type,
+			direct,
 		}
 	}
 

@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ use crate::investment::action::Action;
 use crate::investment::lot::{Lot, LotStatus};
 use crate::investment::sale::Sale;
 use crate::util::amount::Amount;
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 
 /// A set of lots, reflecting a certain coherent state of an investment
 /// portfolio. When it is being assembled, it will reject states where,
@@ -27,10 +27,17 @@ use anyhow::{bail, Error};
 ///
 /// Once assembled, it can filter and ultimately provide its set of
 /// lots to another struct for reporting.
+#[derive(Debug)]
 pub struct Portfolio {
 	state: Vec<Lot>,
 	/// The ID number that will be automatically assigned to the next lot
 	next_id: u64,
+}
+
+impl Default for Portfolio {
+	fn default() -> Self {
+		Self::new()
+	}
 }
 
 impl Portfolio {
@@ -78,10 +85,10 @@ impl Portfolio {
 			}
 
 			// If a lot is named, we only sell against the matching lot
-			if let Some(name) = &action.lot_name {
-				if name != &lot.id {
-					continue;
-				}
+			if let Some(name) = &action.lot_name
+				&& name != &lot.id
+			{
+				continue;
 			}
 
 			// Determine how much can be sold from this lot

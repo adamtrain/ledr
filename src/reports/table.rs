@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+use std::fmt::Write;
 
 /// Standard table printer for those reports, such as account summaries, that
 /// report a potentially large number of single-line objects.
@@ -75,8 +76,9 @@ impl Table {
 		}
 	}
 
-	pub fn print(&self) {
-		println!();
+	/// Renders the table, preceded by a blank line
+	pub fn render(&self) -> String {
+		let mut out = String::from("\n");
 		let mut max_widths = vec![0; self.column_count];
 
 		// Calculate maximum column widths for proper spacing
@@ -91,73 +93,84 @@ impl Table {
 		// Render the table
 		for row in &self.rows {
 			match row {
-				Row::Header(header_row) => {
-					self.print_centered_row(&max_widths, header_row, " | ")
-				},
+				Row::Header(header_row) => self.print_centered_row(
+					&mut out,
+					&max_widths,
+					header_row,
+					" | ",
+				),
 				Row::Data(data_row) => {
-					self.print_data_row(&max_widths, data_row, "   ")
+					self.print_data_row(&mut out, &max_widths, data_row, "   ")
 				},
-				Row::Separator => self.print_separator(&max_widths),
-				Row::PartialSeparator(data_sep) => {
-					self.print_partial_separator(&max_widths, data_sep)
-				},
+				Row::Separator => self.print_separator(&mut out, &max_widths),
+				Row::PartialSeparator(data_sep) => self
+					.print_partial_separator(&mut out, &max_widths, data_sep),
 			}
 		}
+		out
 	}
 
 	fn print_data_row(
 		&self,
+		out: &mut String,
 		max_widths: &[usize],
 		data_row: &[String],
 		separator: &str,
 	) {
 		for (i, value) in data_row.iter().enumerate() {
 			if self.right_align[i] {
-				print!("{:>width$}", value, width = max_widths[i]);
+				let _ = write!(out, "{:>width$}", value, width = max_widths[i]);
 			} else {
-				print!("{:<width$}", value, width = max_widths[i]);
+				let _ = write!(out, "{:<width$}", value, width = max_widths[i]);
 			}
 			if i < data_row.len() - 1 {
-				print!("{separator}");
+				let _ = write!(out, "{separator}");
 			}
 		}
-		println!();
+		out.push('\n');
 	}
 
 	fn print_centered_row(
 		&self,
+		out: &mut String,
 		max_widths: &[usize],
 		data_row: &[String],
 		separator: &str,
 	) {
 		for (i, value) in data_row.iter().enumerate() {
 			let centered_value = Table::center_align(value, max_widths[i]);
-			print!("{centered_value}");
+			let _ = write!(out, "{centered_value}");
 			if i < data_row.len() - 1 {
-				print!("{separator}");
+				let _ = write!(out, "{separator}");
 			}
 		}
-		println!();
+		out.push('\n');
 	}
 
-	fn print_separator(&self, max_widths: &[usize]) {
+	fn print_separator(&self, out: &mut String, max_widths: &[usize]) {
 		let total_width: usize =
 			max_widths.iter().sum::<usize>() + (3 * (self.column_count - 1));
-		println!("{:-<total_width$}", "", total_width = total_width);
+		let _ =
+			writeln!(out, "{:-<total_width$}", "", total_width = total_width);
 	}
 
-	fn print_partial_separator(&self, max_widths: &[usize], data_sep: &[bool]) {
+	fn print_partial_separator(
+		&self,
+		out: &mut String,
+		max_widths: &[usize],
+		data_sep: &[bool],
+	) {
 		for (i, draw) in data_sep.iter().enumerate() {
 			if *draw {
-				print!("{:-<width$}", "", width = max_widths[i]);
+				let _ = write!(out, "{:-<width$}", "", width = max_widths[i]);
 			} else {
-				print!("{: <width$}", "", width = max_widths[i]);
+				let _ = write!(out, "{: <width$}", "", width = max_widths[i]);
 			}
 			if i < data_sep.len() - 1 {
-				print!("   "); // Spacing between columns
+				let _ = write!(out, "   "); // Spacing between columns
 			}
 		}
-		println!();
+		out.push('\n');
 	}
 
 	fn center_align(value: &str, width: usize) -> String {

@@ -1,9 +1,8 @@
-VERSION=0.1
 PREFIX?=/usr/local
 BINDIR?=$(PREFIX)/bin
 MANDIR?=$(PREFIX)/share/man
 
-.PHONY: all build fmt test clean doc install uninstall release
+.PHONY: all build fmt test lint clean doc install uninstall release check-gpl screenshots
 
 all: fmt build doc
 
@@ -14,7 +13,11 @@ fmt:
 	cargo fmt
 
 test: fmt
-	cargo test -- --test-threads=1
+	cargo test
+
+lint:
+	cargo clippy --all-targets -- -D warnings
+	cargo fmt --check
 
 clean: fmt
 	cargo clean
@@ -26,10 +29,10 @@ doc:
 	scdoc < doc/ledr.7.scd > target/ledr.7
 
 install:
-	mkdir -p /usr/local/bin
-	mkdir -p /usr/local/share/man/man1
-	mkdir -p /usr/local/share/man/man5
-	mkdir -p /usr/local/share/man/man7
+	mkdir -p $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	mkdir -p $(DESTDIR)$(MANDIR)/man5
+	mkdir -p $(DESTDIR)$(MANDIR)/man7
 	install -m 755 target/release/ledr $(DESTDIR)$(BINDIR)/ledr
 	install -m 644 target/ledr.1 $(DESTDIR)$(MANDIR)/man1/ledr.1
 	install -m 644 target/ledr.5 $(DESTDIR)$(MANDIR)/man5/ledr.5
@@ -43,12 +46,17 @@ uninstall:
 
 # Reports .rs files that do not have a GPLv3 header
 check-gpl:
-	@violations=$$(find . -name '*.rs' -exec sh -c 'head -n 1 "{}" | grep -q "©" || echo "{}"' \;); \
+	@violations=$$(find src tests -name '*.rs' -exec sh -c 'head -n 1 "{}" | grep -q "©" || echo "{}"' \;); \
 	if [ -n "$$violations" ]; then \
 		echo "$$violations"; \
 		exit 1; \
 	fi
 	@echo "All good"
+
+# Regenerate the README screenshots in docs/ from examples/demo.ledr
+# Prerequisites: uv
+screenshots: build
+	uv run scripts/screenshots.py
 
 # Create a GitHub release with macOS arm64 binary
 # Usage: make release TAG=v1.0.0

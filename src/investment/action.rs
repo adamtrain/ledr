@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ use crate::investment::commodity::Commodity;
 use crate::util::amount::Amount;
 use crate::util::date::Date;
 use crate::util::quant::Quant;
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use std::cmp::Ordering;
 
 /// Represents a buy or sell that was recorded by the user. Aggregated into a

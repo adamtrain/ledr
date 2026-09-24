@@ -213,6 +213,12 @@ include 2023.ledr
 And this will make ledr read those files, in the order they appear, as though
 their full content appeared in that position in the current file.
 
+A relative path is relative to the directory of the file that includes it, so
+a ledger can be moved around, or read from anywhere, without breaking. A path
+containing spaces can be written in double quotes:
+
+	include "2024 archive.ledr"
+
 *ledr* parses files by first reading every directive, and then reading every
 entry. Includes are processed with the same priority as directives, so if you
 had a file that first contained some directives, then an include, then more
@@ -222,8 +228,9 @@ the include statement. (Following this, the same flow would be followed in a
 second pass, but this time it would include all entries.)
 
 If multiple includes are circular, i.e. if they instruct *ledr* to include a
-file that has already been included, *ledr* will complain and quit with an
-error.
+file that is already being read, *ledr* will complain and quit with an error
+that shows the chain of files involved. Including the same file twice from
+different places is also an error, since its entries would count twice.
 
 # ENTRIES
 
@@ -242,8 +249,9 @@ In other words, it must begin with a date in YYYY-MM-DD format, followed by at
 least one space, then any text description you want. A description cannot be
 empty.
 
-Entries must be separated by at least one empty line, or *ledr* will complain
-and quit with an error. (This is not true of directives or includes.)
+An entry ends at the next empty line, at the next entry declaration, or at the
+end of its file. Separating entries with an empty line is conventional, and is
+what *ledr tidy* and *ledr add* do.
 
 ## Reference Lines
 
@@ -272,6 +280,12 @@ a certain currency. This is the minimum that a detail line must contain. For
 example:
 
 	Assets:US:Chase:Checking    1232.34 USD
+
+Amounts may use commas as thousands separators, like _1,232.34_, and may leave
+out a leading zero, like _.5_. A stray comma after the currency is ignored. Commas elsewhere, such as in descriptions,
+references and lot names, are kept as written. Account names cannot contain
+spaces, and must begin with one of the five top-level categories: _Assets_,
+_Liabilities_, _Equity_, _Income_ or _Expenses_.
 
 Exactly one detail line per entry may omit the amount and currency. If this is
 done, it is assumed that any imbalance left over by any other entries is
@@ -310,7 +324,10 @@ rewrite the above example as:
 	Expenses:Shops:Hardware    1232.34 USD @@ 1602.04 CAD
 
 And *ledr* will interpret the amount to the right of the at-signs as a total,
-rather than a rate. The full expansion is the same as above.
+rather than a rate. The full expansion is the same as above. The total is
+always written as a positive number, whichever way the amount moves:
+
+	Assets:US:Checking        -100.00 USD @@ 130.00 CAD
 
 Whether to use this or a regular inline conversion is a matter of convenience
 and preference.
@@ -358,6 +375,10 @@ it again:
 
 	Assets:Investments:AAPL     -30 AAPL { 234.56 USD, "lot A" }
 
+The spacing and comma inside the braces are optional, so
+_{234.56 USD "lot A"}_ means the same thing, and a name without spaces does not
+need quotes.
+
 Even if other lots came in between with the same cost basis, *ledr* would
 assign the sale to the lot you named. This allows you to do any degree of
 lot selection that you want; we have the benefit of working from a text
@@ -397,24 +418,37 @@ or a tab, or anything else.
 
 # ERRORS
 
-This section documents common error messages and their meanings.
+This section documents common error messages and their meanings. Every error
+names the file and line it is about, and most come with a suggestion for how to
+fix them. *ledr check* reports all of them at once.
 
 ## Parsing Errors
 
-*Invalid include (line N)*
+*Include is missing a file path*
 	The include statement is malformed. Ensure format is: include <path>
 
-*Invalid directive (line N)*
-	A declaration line (starting with !) has invalid syntax.
+*Invalid `...` directive* / *Unknown directive `...`*
+	A declaration line (starting with !) has invalid syntax, or a keyword
+	*ledr* does not know (with a suggestion, if it looks like a typo).
 
-*Orphaned date (line N)*
-	A date line appears without any following entry detail lines.
+*Entry dated ... has no description*
+	A date line appears without a description after it.
 
-*Invalid format (line N)*
-	An entry detail line has invalid syntax, typically in the conversion
-	(@) or lot ({}) portion.
+*`...` is not a valid date*
+	A date is not a real calendar date, or not in YYYY-MM-DD form.
 
-*Circular file includes*
+*Missing a currency after `...`* / *Expected an amount after `...`*
+	An entry detail line has invalid syntax. A common cause is a space in an
+	account name, or a currency written before its amount.
+
+*Unclosed `{`* / *Unexpected text after the amount*
+	The conversion (@) or lot ({}) portion of a detail line is malformed.
+
+*Posting outside of an entry*
+	A detail line appears where no entry is being written, usually because
+	an empty line has split an entry in two.
+
+*Circular include*
 	Two or more files include each other, creating an infinite loop.
 
 ## Declaration Errors
@@ -438,18 +472,17 @@ This section documents common error messages and their meanings.
 
 ## Entry Errors
 
-*Unbalanced entry*
+*Entry does not balance: off by ...*
 	The debits and credits in an entry do not sum to zero, and there is
 	no virtual detail line to absorb the imbalance.
 
 *Only one line per entry may omit amount and currency*
 	Multiple detail lines in the same entry omit their amounts.
 
-*Invalid account prefix*
-	An account does not begin with one of: Assets, Liabilities, Equity,
-	Income, or Expenses.
+*`...` must start with one of Assets, Liabilities, Equity, Income, Expenses*
+	An account does not begin with one of the five categories.
 
-*Empty entry*
+*Entry `...` has no postings*
 	An entry has no detail lines.
 
 ## Lot Errors
@@ -460,8 +493,13 @@ This section documents common error messages and their meanings.
 
 ## Exchange Rate Errors
 
-*Cannot declare multiple rates on same date*
+*Cannot declare multiple rates between ... and ... on ...*
 	Two rate directives exist for the same currency pair on the same date.
+
+*A number is too large or too precise to compute exactly*
+	*ledr* never rounds silently, so it stops rather than guess when a value
+	cannot be represented exactly. Look for amounts with very many decimal
+	places, or extreme exchange rates.
 
 # SEE ALSO
 
@@ -479,5 +517,5 @@ consult qualified financial professionals for such advice.
 
 # AUTHORS
 
-Maintained by *Adam Train <adam@usdocument.org>*. Up-to-date source code can be
+Maintained by *Adam Train <adam@adametrain.com>*. Up-to-date source code can be
 found at *github.com/adamtrain/ledr* and contributions are accepted via GitHub.

@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,11 @@ impl RateReporter {
 		Self { rates }
 	}
 
-	pub fn print_all_rates(&self) {
+	pub fn rates(&self) -> &BTreeMap<(String, String), Vec<ObservedRate>> {
+		&self.rates
+	}
+
+	pub fn plain(&self) -> String {
 		let mut table = Table::new(5);
 
 		table.add_header(vec!["Base", "Quote", "Observed", "Rate", "T"]);
@@ -44,10 +48,9 @@ impl RateReporter {
 			// Hacky way of checking whether the given rate was an indirect,
 			// inferred rate or a rate actually observed between currencies.
 			for observation in rate_set {
-				let reported_date = if observation.date.is_none() {
-					"Multiple".to_string()
-				} else {
-					observation.date.unwrap().to_string()
+				let reported_date = match observation.date {
+					Some(date) => date.to_string(),
+					None => "Multiple".to_string(),
 				};
 
 				table.add_row(vec![
@@ -64,6 +67,6 @@ impl RateReporter {
 			}
 		}
 
-		table.print();
+		table.render()
 	}
 }

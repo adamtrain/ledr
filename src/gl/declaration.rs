@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 use crate::util::date::Date;
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use std::collections::BTreeMap;
 
 /// An indication from a user that a given object is or is not active or
@@ -33,7 +33,9 @@ impl Declaration {
 
 	pub fn open_account(&mut self, date: Date) -> Result<(), Error> {
 		if self.events.contains_key(&date) {
-			bail!("Cannot make multiple declarations for the same account on the same date")
+			bail!(
+				"Cannot make multiple declarations for the same account on the same date"
+			)
 		}
 
 		self.events.insert(date, true);
@@ -42,7 +44,9 @@ impl Declaration {
 
 	pub fn close_account(&mut self, date: Date) -> Result<(), Error> {
 		if self.events.contains_key(&date) {
-			bail!("Cannot make multiple declarations for the same account on the same date")
+			bail!(
+				"Cannot make multiple declarations for the same account on the same date"
+			)
 		}
 
 		self.events.insert(date, false);

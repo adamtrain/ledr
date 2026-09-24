@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 use crate::gl::ledger::VALID_PREFIXES;
 use crate::gl::total::Total;
 use crate::util::quant::Quant;
+use std::fmt::Write;
 
 /// When using this to display something, you should instantiate it, then sort
 /// it, then display it. Filters should be handled in the Total struct.
@@ -185,6 +186,96 @@ impl StatementReporter {
 	}
 
 	// ------------
+	// -- ACCESS --
+	// ------------
+
+	/// Totals by currency across everything shown
+	pub fn totals(&self) -> &[(String, Quant)] {
+		&self.amounts
+	}
+
+	/// The total of one top-level category, e.g. "Assets", if present
+	pub fn category_totals(&self, name: &str) -> Option<&[(String, Quant)]> {
+		self.subtotals
+			.iter()
+			.find(|(n, _)| n == name)
+			.map(|(_, s)| s.amounts.as_slice())
+	}
+
+	/// Flattens the tree into display order, condensing chains of accounts
+	/// that each hold a single sub-account with the same balance, and
+	/// stopping at `max_depth` if given.
+	pub fn rows(&self, max_depth: Option<usize>) -> Vec<StatementRow> {
+		let mut rows = vec![];
+		let count = self.subtotals.len();
+		for (i, (_, sub)) in self.subtotals.iter().enumerate() {
+			sub.collect_rows(
+				&mut rows,
+				vec![],
+				i + 1 == count,
+				max_depth,
+				&sub.account,
+			);
+		}
+		rows
+	}
+
+	fn collect_rows(
+		&self,
+		rows: &mut Vec<StatementRow>,
+		guides: Vec<bool>,
+		is_last: bool,
+		max_depth: Option<usize>,
+		category: &str,
+	) {
+		let depth = guides.len();
+		let can_condense = self.can_condense_with_all_below();
+		let at_limit = max_depth.is_some_and(|d| depth + 1 >= d);
+
+		let hidden = if can_condense || !at_limit {
+			0
+		} else {
+			self.count_descendants()
+		};
+		rows.push(StatementRow {
+			depth,
+			name: if can_condense {
+				self.condensed_name()
+			} else {
+				self.account.clone()
+			},
+			amounts: self.amounts.clone(),
+			guides: guides.clone(),
+			is_last,
+			hidden,
+			category: category.to_string(),
+		});
+
+		if can_condense || at_limit {
+			return;
+		}
+		let count = self.subtotals.len();
+		for (i, (_, sub)) in self.subtotals.iter().enumerate() {
+			let mut child_guides = guides.clone();
+			child_guides.push(!is_last);
+			sub.collect_rows(
+				rows,
+				child_guides,
+				i + 1 == count,
+				max_depth,
+				category,
+			);
+		}
+	}
+
+	fn count_descendants(&self) -> usize {
+		self.subtotals
+			.iter()
+			.map(|(_, s)| 1 + s.count_descendants())
+			.sum()
+	}
+
+	// ------------
 	// -- PRINTS --
 	// ------------
 
@@ -214,32 +305,41 @@ impl StatementReporter {
 		max_width + 1
 	}
 
-	/// Prints the contents of the reporter like the classic Ledger does.
-	/// We only expand the subtotals up to the max_depth, if present.
-	pub fn print_ledger_format(&self, max_depth: Option<usize>) {
+	/// Renders the report like the classic Ledger does. We only expand the
+	/// subtotals up to the max_depth, if present.
+	pub fn plain(&self, max_depth: Option<usize>) -> String {
+		let mut out = String::new();
 		if self.amounts.is_empty() {
-			println!("No data");
-			return;
+			out.push_str("No data\n");
+			return out;
 		}
 
 		let column_width = self.calculate_column_width();
 
 		// Display all entries
-		self.ledger_fmt_recursive(0, column_width, max_depth);
+		self.ledger_fmt_recursive(&mut out, 0, column_width, max_depth);
 
 		// Display the totals for each currency
-		println!("{:>width$}", "------------------", width = column_width);
+		let _ = writeln!(
+			out,
+			"{:>width$}",
+			"------------------",
+			width = column_width
+		);
 		for (currency, amount) in &self.amounts {
-			println!(
+			let _ = writeln!(
+				out,
 				"{:>width$}",
 				format!("{} {}", currency, amount),
 				width = column_width
 			);
 		}
+		out
 	}
 
 	fn ledger_fmt_recursive(
 		&self,
+		out: &mut String,
 		indent: usize,
 		width: usize,
 		max_depth: Option<usize>,
@@ -266,7 +366,8 @@ impl StatementReporter {
 					_ => &*format!(" {account_name}"),
 				};
 
-				println!(
+				let _ = writeln!(
+					out,
 					"{:>width$} {}{}",
 					format!("{} {}", currency, amount),
 					indentation,
@@ -278,17 +379,42 @@ impl StatementReporter {
 			}
 		}
 
-		if let Some(d) = max_depth {
-			if indent == d {
-				return;
-			}
+		if let Some(d) = max_depth
+			&& indent == d
+		{
+			return;
 		}
 
 		if !can_condense {
 			// Recursively display each subtotal
 			for (_, subtotal) in &self.subtotals {
-				subtotal.ledger_fmt_recursive(indent + 1, width, max_depth);
+				subtotal.ledger_fmt_recursive(
+					out,
+					indent + 1,
+					width,
+					max_depth,
+				);
 			}
 		}
 	}
+}
+
+/// One line of a financial statement, ready to draw as part of a tree.
+#[derive(Clone, Debug)]
+pub struct StatementRow {
+	/// 0 for a top-level category like Assets
+	pub depth: usize,
+	/// The account's own segment, or several joined with ':' if condensed
+	pub name: String,
+	/// Balance by currency, including everything below
+	pub amounts: Vec<(String, Quant)>,
+	/// For each ancestor below the top level, whether more of its siblings
+	/// follow, i.e. whether a tree guide line should continue past this row
+	pub guides: Vec<bool>,
+	/// Whether this is the last of its siblings
+	pub is_last: bool,
+	/// Accounts below this one hidden by a depth limit
+	pub hidden: usize,
+	/// The top-level category this row belongs to
+	pub category: String,
 }

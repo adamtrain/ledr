@@ -6,7 +6,7 @@ ledr - plain text accounting tool
 
 # SYNOPSIS
 
-*ledr* -f FILE _command_
+*ledr* [-f _FILE_] [_options_] [_command_ [_arguments_]]
 
 # DESCRIPTION
 
@@ -16,29 +16,45 @@ accounts. These movements may be actual (i.e. the purchase of goods) or
 abstract (i.e. the appropriation of funds for a specific purpose). In other
 words, it is a reporting tool from a text-based *general ledger*.
 
-*ledr* contains a number of modules for different purposes. The three
-categories of modules are (1) financial statements; (2) lot reports, and (3)
-auxiliary functions. Each is described below in turn. All of these expect
-an input file in the _ledr_(5) format. A number of configuration options also
-exist to modify the display of reports.
+*ledr* contains a number of modules for different purposes. The four
+categories of modules are (1) financial statements; (2) lot reports; (3)
+writing entries, and (4) auxiliary functions. Each is described below in
+turn. All of these expect an input file in the _ledr_(5) format. A number of
+configuration options also exist to modify the display of reports.
 
-*ledr* is solely a read-only tool, and does not modify files.
+*ledr* only ever changes files when asked to: *ledr add* appends entries, and
+*ledr tidy --write* reformats files. Every other command only reads.
+
+Run with no command, *ledr* shows an overview of the ledger: net worth, the
+last two months of income and spending, and the most recent entries.
+
+# OUTPUT
+
+In a terminal, reports are _fancy_: colored, with summary panels, account
+trees, proportional bars and charts. When output goes anywhere else, such as a
+pipe or a file, reports are _plain_: simple text in a stable format that is
+easy to process with other tools. The *--plain* and *--fancy* flags choose
+one or the other explicitly.
+
+Errors and warnings point at the lines of the ledger they are about, as
+_path_:_line_, and in a terminal show those lines with the problem marked.
 
 # FINANCIAL STATEMENTS
 
-## ledr bs
+## ledr bs (balance)
 
 Balance sheet. Displays a summary of accounts in the Assets, Liabilities and
 Equity categories. A point-in-time report that takes into account all entries
 prior to the specified end date, to show a complete balance as of that date.
 
-## ledr is
+## ledr is (income)
 
 Income statement. Displays a summary of accounts in the Income and Expenses
 categories. This report accepts a time-range, to indicate the total income and
-expenses during a certain period.
+expenses during a certain period. The fancy form also shows net income and
+how much of the income was saved.
 
-## ledr tb
+## ledr tb (trial)
 
 Trial balance. Displays a summary of all accounts across all five categories.
 Generally used to verify that a ledger balances, or to get an overview of its
@@ -46,19 +62,24 @@ complete contents.
 
 # LOT REPORTS
 
-## ledr rgl
+## ledr rgl (realized)
 
 Realized gains and losses. Displays a table containing all lot sales in the
 given interval, with cost basis information for each, proceeds information if
 available, and (if both are available), the net unit and total gain/loss for
-each lot.
+each lot. Proceeds in another currency than the cost basis are converted at
+the rate known on the date of the sale.
 
-## ledr ugl
+## ledr ugl (unrealized)
 
 Unrealized gains and losses. Displays a table containing all open lots and
 their associated quantities, cost bases and, if exchange rates are available,
 estimations of their present value and the net unit and total unrealized
 gain/loss for each lot.
+
+A lot with no known price shows as _UNK_ (or "no price") rather than as
+breaking even, and makes its currency's total unknown too, since any sum
+would be misleading. Declare a price with a rate directive to value it.
 
 ## Remarks
 
@@ -66,12 +87,93 @@ Lot reports rely on the entry of data in certain ways to make sure *ledr* can
 correctly interpret the proceeds from a given lot sale. For detailed discussion
 on this topic, consult _ledr_(7).
 
+# WRITING ENTRIES
+
+## ledr add [WORDS...]
+
+Adds an entry to the ledger. With no words, and in a terminal, *ledr* asks for
+the entry one question at a time: the date, a description (suggesting past
+ones as you type), then each account (with fuzzy completion, so _chk_ finds
+_Assets:Checking_) and amount. If the description was used before, it offers
+to reuse that entry's accounts, so only the amount needs typing. Amounts may
+be arithmetic, like _12.50+3.20_, and may name a currency, like _4.50 CAD_.
+Leave one amount blank and it balances the entry.
+
+With words, *ledr* builds the entry from them directly, using the ledger's
+history to fill the gaps:
+
+	ledr add coffee 4.50++
+ledr add yesterday rent 1850++
+ledr add fri "Pizza night" 23.50 @restaurants @visa++
+ledr add "New bike" 340 @Expenses:Hobbies @checking
+
+The first word may be a day: _today_, _yesterday_, or a weekday such as _fri_
+(the most recent one). A date written as _03-15_ or _2024-03-15_ counts
+anywhere, and is never taken as a subtraction; write _(12-3)_ to subtract. The
+last number is the amount, and a currency beside it is its currency.
+
+Words beginning with _@_ are accounts, matched against existing ones by a few
+letters (_@chk_ finds _Assets:Checking_), or created if written out in full.
+An account under _Assets_ or _Liabilities_ is taken as what paid, and any
+other as what the money was for; with two of the former, it is a transfer to
+the first from the second. Money earned under _Income_ is credited, i.e.
+written as negative, as income always is.
+
+The rest is the description, which is matched against past descriptions, and
+against the accounts of past entries (so _coffee_ finds the entry last used
+for _Expenses:Food:Coffee_). A matching entry is reused with the new amount,
+moving the same way the old one did, and any accounts given replace the ones
+with the same role; entries with more than two lines, like a paycheck, are
+scaled in proportion. Entries with prices, lots or more than one currency
+can't be reused this way; run *ledr add* with no words for those.
+
+Whichever way it was written, the entry is shown, then checked against the
+whole ledger as though it were already saved, and only written if it passes.
+The check always covers the whole ledger, whatever *--begin*, *--end* or
+*--period* say. Accounts and currencies used for the first time are declared
+automatically, if the ledger declares its names. The entry is appended to the
+file holding the latest entry, with its amounts aligned and its line endings
+matching that file. Descriptions and accounts can't contain _#_, since it
+would start a comment.
+
+*--to* _FILE_
+	Add to this file instead. It must be a file the ledger reads, i.e. the
+	ledger file itself or one it includes.
+
+*-y*, *--yes*
+	Save without asking. Required when there is no terminal to ask in.
+
+*-n*, *--dry-run*
+	Show the entry, but save nothing.
+
+## ledr tidy
+
+Formats every file of the ledger: amounts line up on their decimal points,
+spacing and indentation become consistent, dates are written in full, and
+long runs of blank lines are shortened. Comments and the order of everything
+stay exactly as they were, as do Windows line endings. *ledr* checks that each
+tidied file means exactly what the original did, and refuses to change it
+otherwise.
+
+Files are replaced whole, so an interrupted write never leaves one half
+written. A symbolic link is followed, so the file it points to is the one
+tidied, and read-only files are left alone.
+
+By default, *ledr tidy* shows the changes it would make as a diff.
+
+*-w*, *--write*
+	Rewrite the files in place.
+
+*--check*
+	List the files that are not tidy, and exit with failure if there are any;
+	useful in continuous integration or a pre-commit hook.
+
 # AUXILIARY FUNCTIONS
 
 This section contains all commands that do not fit into either of the above
 categories.
 
-## ledr er
+## ledr er (rates)
 
 Exchange rates report. Prints a table containing each of the declared,
 observed, or inferred exchange rates that *ledr* has interpreted from the
@@ -93,52 +195,97 @@ words, if there is an unbroken chain of declared exchange rates between the
 currencies), then that rate will also be reported as declared, because it must
 logically follow from the data in the ledger file.
 
-## ledr as <ACCOUNT>
+The fancy form lists only pairs of currencies that meet directly, with a chart
+of each pair's history; the plain form lists every pair.
+
+## ledr as (account) <ACCOUNT>
 
 Account summary. Given an account name, prints a summary of all entries that
 affected the balance of that account, and the net impact on that account.
 Accepts partial name matches, and therefore can be used to summarize a specific
-account or a group of accounts that share part of their name.
+account or a group of accounts that share part of their name. The fancy form
+adds a running balance, a chart of the balance over time, and the
+descriptions that moved the most money. With *--begin*, earlier entries are
+not listed, but still count towards the running balance.
 
-## ledr fmt
+## ledr fmt (print)
 
-Format command. In this mode, *ledr* processes the ledger file as normal, then
-outputs the final computed results to standard output in a standard format.
-This can be used to validate *ledr* understood an entry correctly, for
-debugging, or to sanitize the formatting of the ledger file.
+Print command. In this mode, *ledr* processes the ledger file as normal, then
+outputs the final computed results to standard output in a standard format:
+every line balanced, conversions made explicit. This can be used to validate
+that *ledr* understood an entry correctly, or for debugging. To reformat the
+ledger files themselves, use *ledr tidy*.
 
 ## ledr find <TERM>
 
 Find command. Reports a list of all entries whose descriptions match the given
-search term in a standard format. Like *ledr fmt*, but filtered.
+search term in a standard format. Like *ledr fmt*, but filtered. The search
+ignores case, unless the term contains a capital letter.
 
 ## ledr check
 
-Check command. Processes the ledger and reports possible common data quality or
-integrity problems to standard output. Most of the things this command checks
-for relate to lot management and currency conversion. Additional functions of
-this command are a useful point of feedback. The intention is for it to provide
-a useful way to validate a ledger file's data accuracy.
+Check command. Processes the ledger and reports every problem it finds at
+once, rather than stopping at the first: syntax errors, undeclared or
+misspelled accounts and currencies (with suggestions), entries that do not
+balance, and warnings about likely mistakes. Most warnings relate to lot
+management and currency conversion, such as a conversion far from the rate
+declared for its date. For undeclared names, it prints the declarations that
+would fix them, ready to paste.
+
+*ledr check* exits with failure if there are errors.
+
+*--strict*
+	Exit with failure if there are warnings, too.
+
+## ledr accounts
+
+Lists every account, declared or used. Plain output is one account per line,
+for use with other tools; fancy output adds how often and how recently each
+is used.
+
+## ledr payees
+
+Lists every entry description, with how often each is used.
+
+## ledr completions <SHELL>
+
+Prints a completion script for _bash_, _zsh_, _fish_, _elvish_ or
+_powershell_. For example, for zsh:
+
+	ledr completions zsh > ~/.zfunc/\_ledr
 
 # FLAGS
 
 Almost all *ledr* commands support flags to modify their behavior in useful
 ways. This section lists all supported flags.
 
-## -f <FILE>
+## -f <FILE> / --file <FILE>
 
-Specifies the input file. Required.
+Specifies the input file, or _-_ to read the ledger from standard input.
+Required, unless the *LEDR_FILE* environment variable names one.
 
 ## -b <DATE> / --begin <DATE>
 
 Ignore entries prior to the given date. Ignored for balance sheet and open lot
 reports such as unrealized capital gains and losses.
 
+Dates may be written in full (_2024-03-15_), as a month (_2024-03_) or year
+(_2024_), or as _today_, _yesterday_, _tomorrow_, or a number of days ago
+(_-30_). A month or year begins on its first day.
+
 ## -e <DATE> / --end <DATE>
 
 Ignore entries after the given date. Always respected. This allows you to
 produce any report as though you were processing the ledger on a specific date
-in the past.
+in the past. Dates are written as for *--begin*, except that a month or year
+ends on its last day, so *-e 2024* includes all of 2024.
+
+## -P <PERIOD> / --period <PERIOD>
+
+Report on one period, instead of giving *--begin* and *--end*. A period may be
+any date accepted by *--begin*, a quarter (_2024-Q1_), or one of
+_this-month_, _last-month_, _this-quarter_, _last-quarter_, _this-year_,
+_last-year_, _ytd_ (the year to date) or _mtd_ (the month to date).
 
 ## -c <SYMBOL> / --currency <SYMBOL>
 
@@ -212,9 +359,20 @@ number of decimal places for that currency in the ledger. This flag overrides
 all of that and forces the report to render at the number of decimal places
 provided.
 
+## --plain
+
+Print plain output, even in a terminal. This is the output format *ledr* has
+always had, and the default whenever output is not a terminal.
+
+## --fancy
+
+Print fancy output, even when output is not a terminal; for example, to page
+through it with _less -R_.
+
 ## -h / --help
 
-Prints a concise guide to the usage of *ledr*.
+Prints a concise guide to the usage of *ledr*. Each command also has its own,
+e.g. *ledr add --help*.
 
 ## -V / --version
 
@@ -228,7 +386,20 @@ Generate a balance sheet from a ledger file:
 
 Generate an income statement for 2024, converted to USD:
 
-	ledr -f ledger.ledr is -b 2024-01-01 -e 2024-12-31 -c USD
+	ledr -f ledger.ledr is -P 2024 -c USD
+
+See last month's income and spending, with income shown as positive:
+
+	ledr is -P last-month -i
+
+Add an entry like the last coffee, but for 4.75:
+
+	ledr add coffee 4.75
+
+Tidy the ledger files, then make sure they stay tidy in a pre-commit hook:
+
+	ledr tidy --write++
+ledr tidy --check && ledr check --strict
 
 Check a ledger file for data quality issues:
 
@@ -398,9 +569,31 @@ _ledr_(5) - general ledger file format
 _ledr_(7) - data integrity guidance, further discussion of lot management and
 currency conversion
 
+# ENVIRONMENT
+
+*LEDR_FILE*
+	The ledger file to read when *-f* is not given.
+
+*LEDR_PLAIN*
+	If set to anything but _0_, _false_ or _no_, output is plain unless
+	*--fancy* is given.
+
+*NO_COLOR*
+	If set and not empty, fancy output has no color, following the
+	convention at _no-color.org_.
+
+*COLORTERM*
+	If _truecolor_ or _24bit_, colors are exact; otherwise *ledr* uses the
+	nearest of 256 colors.
+
+*COLUMNS*
+	The width to lay out fancy output in, when it cannot be detected.
+
 # EXIT STATUS
 
-*ledr* exits 0 on success, and non-zero if an error occurs.
+*ledr* exits 0 on success, and 1 if an error occurs, if *ledr check* finds
+errors (or warnings, with *--strict*), or if *ledr tidy --check* finds files
+that are not tidy. Invalid command line arguments exit with 2.
 
 Common error conditions include invalid file format, unbalanced entries,
 undeclared accounts or currencies (in strict mode), and invalid lot
@@ -409,7 +602,7 @@ references.
 # FILES
 
 *ledr* does not use configuration files. All options are specified via
-command-line flags.
+command-line flags or the environment.
 
 Ledger files conventionally use the _.ledr_ extension, though any file
 extension is accepted.
@@ -423,5 +616,5 @@ consult qualified financial professionals for such advice.
 
 # AUTHORS
 
-Maintained by *Adam Train <adam@usdocument.org>*. Up-to-date source code can be
+Maintained by *Adam Train <adam@adametrain.com>*. Up-to-date source code can be
 found at *github.com/adamtrain/ledr* and contributions are accepted via GitHub.

@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod ledger_reporter;
 pub mod portfolio_reporter;
 pub mod rate_reporter;
+pub mod register;
 pub mod statement_reporter;
 pub mod table;

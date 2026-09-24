@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -13,16 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-use crate::gl::exchange_rates::ExchangeRates;
+use crate::diagnostics::Diagnostic;
+use crate::gl::exchange_rates::{ExchangeRates, RateConflict};
 use crate::gl::observed_rate::ObservationType;
 use crate::investment::action::{Action, Direction};
+use crate::syntax::source::Span;
 use crate::util::amount::Amount;
 use crate::util::date::Date;
 use crate::util::quant::Quant;
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
-use std::string::ToString;
+use std::fmt;
 
 pub(crate) const VIRTUAL_CONVERSION_ACCOUNT: &str = "Equity:Conversions";
 
@@ -45,6 +47,9 @@ pub struct Entry {
 	/// because we need to associate proceeds with sales, if known, which
 	/// requires context across multiple detail lines.
 	actions: Vec<Action>,
+
+	/// Where the entry was written, from its header through its last line
+	span: Option<Span>,
 }
 
 impl Entry {
@@ -57,7 +62,26 @@ impl Entry {
 			virtual_detail: None,
 			reference: None,
 			actions: vec![],
+			span: None,
 		}
+	}
+
+	pub fn span(&self) -> Option<Span> {
+		self.span
+	}
+
+	/// Records that the given line belongs to this entry.
+	pub fn extend_span(&mut self, line: Span) {
+		self.span = Some(match self.span {
+			Some(span) => span.through(line),
+			None => line.through(line),
+		});
+	}
+
+	/// A warning about this entry, pointing at it
+	fn warning(&self, message: impl fmt::Display) -> Diagnostic {
+		Diagnostic::warning(format!("{} {}: {message}", self.date, self.desc))
+			.at_opt(self.span)
 	}
 
 	pub fn add_detail(
@@ -132,11 +156,15 @@ impl Entry {
 	}
 
 	pub fn get_reference(&self) -> String {
-		if let Some(reference) = &self.reference {
-			reference.clone()
-		} else {
-			"".to_string()
-		}
+		self.reference.clone().unwrap_or_default()
+	}
+
+	pub fn index(&self) -> usize {
+		self.index
+	}
+
+	pub fn virtual_detail(&self) -> Option<&str> {
+		self.virtual_detail.as_deref()
 	}
 
 	pub fn details(&self) -> &Vec<Detail> {
@@ -201,7 +229,7 @@ impl Entry {
 	pub fn finalize(
 		&mut self,
 		rates: &mut ExchangeRates,
-		allow_warnings: bool,
+		warnings: &mut Vec<Diagnostic>,
 	) -> Result<Vec<Action>, Error> {
 		let actual_details = self.get_actual_details();
 		let actions = self.actions.clone();
@@ -238,15 +266,18 @@ impl Entry {
 			self.multiline_implicit_currency_conversion(
 				&mut imbalances,
 				rates,
-				allow_warnings,
+				warnings,
 			)?;
 		}
 
 		// Attach proceeds to associated sell actions if possible
-		self.resolve_sell_action_proceeds(actual_details, allow_warnings);
+		self.resolve_sell_action_proceeds(actual_details, warnings);
 
 		// If a virtual detail exists, it can absorb all imbalances.
 		// Otherwise, if any remain, we fail the entry as unbalanced.
+		if !imbalances.is_empty() && self.virtual_detail.is_none() {
+			return Err(self.unbalanced(&imbalances).into());
+		}
 		while let Some((currency, value)) = imbalances.pop() {
 			if let Some(vd) = &self.virtual_detail {
 				self.details.push(Detail::new(
@@ -254,12 +285,40 @@ impl Entry {
 					Amount::new(-value, &currency),
 					true,
 				));
-			} else {
-				bail!("Unbalanced entry")
 			}
 		}
 
 		Ok(self.actions.clone())
+	}
+
+	/// Explains exactly how an entry fails to balance
+	fn unbalanced(&self, imbalances: &[(String, Quant)]) -> Diagnostic {
+		let amounts: Vec<String> = imbalances
+			.iter()
+			.map(|(currency, value)| {
+				let mut value = *value;
+				value.make_visible();
+				format!("{value} {currency}")
+			})
+			.collect();
+		let mut error = Diagnostic::error(format!(
+			"Entry does not balance: off by {}",
+			amounts.join(" and ")
+		))
+		.at_opt(self.span);
+		error = if imbalances.len() > 2 {
+			error.help(
+				"with more than two currencies out of balance, ledr cannot infer \
+				exchange rates; add prices like `@ 1.3 CAD`, or leave one line's \
+				amount blank to absorb the difference",
+			)
+		} else {
+			error.help(
+				"fix the amounts, or leave one line's amount blank and ledr will \
+				balance the entry with it",
+			)
+		};
+		error
 	}
 
 	/// This is a special case in which there is no virtual detail, but
@@ -271,16 +330,17 @@ impl Entry {
 		&mut self,
 		imbalances: &mut Vec<(String, Quant)>,
 		rates: &mut ExchangeRates,
-		allow_warnings: bool,
+		warnings: &mut Vec<Diagnostic>,
 	) -> Result<(), Error> {
 		let (currency1, amount1) = imbalances.remove(0);
 		let (currency2, amount2) = imbalances.remove(0);
 
-		if allow_warnings
-			&& ((amount1 > 0 && amount2 > 0) || (amount1 < 0 && amount2 < 0))
-		{
-			println!("[{} {}] entry implies a negative exchange rate (is this intentional?)",
-			self.date, self.desc)
+		if (amount1 > 0 && amount2 > 0) || (amount1 < 0 && amount2 < 0) {
+			warnings.push(
+				self.warning("implies a negative exchange rate")
+					.label("both currencies move in the same direction")
+					.help("if this is not a short position, check the signs"),
+			);
 		}
 
 		self.add_system_detail(
@@ -293,14 +353,33 @@ impl Entry {
 		)?;
 
 		// This implies an exchange rate between the currencies
-		rates.add_equality(
+		let conflict = rates.add_equality(
 			self.date,
 			Amount::new(amount1, &currency1),
 			Amount::new(-amount2, &currency2),
 			ObservationType::Inferred,
 		)?;
+		if let Some(conflict) = conflict {
+			warnings.push(self.rate_conflict_warning(&conflict));
+		}
 
 		Ok(())
+	}
+
+	/// A warning for a conversion far from the rate declared for its date
+	pub fn rate_conflict_warning(&self, conflict: &RateConflict) -> Diagnostic {
+		self.warning(format!(
+			"implies 1 {} = {} {}, but the declared rate is {}",
+			conflict.base,
+			conflict.observed_display(),
+			conflict.quote,
+			conflict.declared_display(),
+		))
+		.label(format!(
+			"{} away from the declared rate",
+			conflict.deviation_display()
+		))
+		.help("check the amounts, or the rate directive for this date")
 	}
 
 	/// Adds proceeds to applicable Sell lot actions iff they can be
@@ -308,9 +387,10 @@ impl Entry {
 	fn resolve_sell_action_proceeds(
 		&mut self,
 		actual_details: Vec<Detail>,
-		allow_warnings: bool,
+		warnings: &mut Vec<Diagnostic>,
 	) {
 		let actions_copy = self.actions.clone();
+		let mut notes = vec![];
 		for sale in &mut self.actions {
 			if sale.direction == Direction::Buy {
 				continue;
@@ -319,37 +399,22 @@ impl Entry {
 			if actual_details.len() > 2
 				|| (actual_details.len() == 2 && self.virtual_detail.is_some())
 			{
-				if allow_warnings {
-					println!(
-						"[{} {}] entry has ambiguous proceeds from lot sale",
-						self.date, self.desc
-					);
-				}
-				return;
+				notes.push(Note::AmbiguousProceeds);
+				break;
 			}
 
 			if self.virtual_detail.is_some() {
 				// Perfectly netted out against the cost basis
-				if allow_warnings {
-					println!(
-						"[{} {}] entry has lot sale netted against nonspecific \
-						detail, implying break-even (is this intentional?)",
-						self.date, self.desc
-					);
-				}
+				notes.push(Note::BreakEven);
 				sale.add_unit_proceeds(sale.commodity.cost_basis().clone());
-				return;
+				break;
 			}
 
 			// If the only other Detail is a buy action, net against its cost
-			// basis, but log a warning if allowed because it can be ambiguous
+			// basis, but warn because it can be ambiguous
 			if let Some(other_action) = actions_copy.iter().find(|a| *a != sale)
 			{
-				println!(
-					"[{} {}] entry marks the purchase of a lot as the \
-						 proceeds of another (consider separating these)",
-					self.date, self.desc,
-				);
+				notes.push(Note::LotAsProceeds);
 				let other_quantity = match &other_action.direction {
 					Direction::Buy => other_action.quantity,
 					Direction::Sell(_) => -other_action.quantity,
@@ -374,6 +439,20 @@ impl Entry {
 					));
 				}
 			}
+		}
+
+		for note in notes {
+			warnings.push(match note {
+				Note::AmbiguousProceeds => self
+					.warning("has ambiguous proceeds from a lot sale")
+					.help("record each lot sale in its own entry, with just the sale and its proceeds"),
+				Note::BreakEven => self
+					.warning("nets a lot sale against a line with no amount, implying it broke even")
+					.help("if the sale made or lost money, write the proceeds explicitly"),
+				Note::LotAsProceeds => self
+					.warning("uses the purchase of one lot as the proceeds of another")
+					.help("consider recording the sale and the purchase separately"),
+			});
 		}
 	}
 
@@ -401,7 +480,7 @@ impl Entry {
 			for detail in system_details {
 				*balances_by_currency
 					.entry(detail.currency().to_string())
-					.or_insert(Quant::zero()) += detail.value();
+					.or_default() += detail.value();
 			}
 
 			let reduced_details: Vec<Detail> = balances_by_currency
@@ -430,9 +509,8 @@ impl Entry {
 
 		// Sum up the values for each currency
 		for detail in &self.details {
-			*balances
-				.entry(detail.currency().to_string())
-				.or_insert(Quant::zero()) += detail.value();
+			*balances.entry(detail.currency().to_string()).or_default() +=
+				detail.value();
 		}
 
 		// Filter for currencies that don't sum to zero
@@ -452,7 +530,12 @@ impl Entry {
 	}
 }
 
-use std::fmt;
+/// Warnings about lot sales, gathered while their actions are borrowed
+enum Note {
+	AmbiguousProceeds,
+	BreakEven,
+	LotAsProceeds,
+}
 
 impl fmt::Display for Entry {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -531,7 +614,7 @@ fn wrap_text(text: &str, max_width: usize) -> Vec<String> {
 
 impl PartialEq for Entry {
 	fn eq(&self, other: &Self) -> bool {
-		self.date == other.date && self.desc == other.desc
+		self.cmp(other) == Ordering::Equal
 	}
 }
 
@@ -583,6 +666,11 @@ impl Detail {
 
 	pub fn value(&self) -> Quant {
 		self.amount.value
+	}
+
+	/// Whether ledr added this line itself, e.g. to balance a conversion
+	pub fn is_system(&self) -> bool {
+		self.is_system
 	}
 }
 
@@ -663,7 +751,7 @@ mod tests {
 			.unwrap();
 
 		let mut rates = ExchangeRates::new(false);
-		let result = entry.finalize(&mut rates, false);
+		let result = entry.finalize(&mut rates, &mut vec![]);
 
 		assert!(result.is_err());
 	}
@@ -682,7 +770,7 @@ mod tests {
 			.unwrap();
 
 		let mut rates = ExchangeRates::new(false);
-		let result = entry.finalize(&mut rates, false);
+		let result = entry.finalize(&mut rates, &mut vec![]);
 
 		assert!(result.is_ok());
 	}
@@ -731,7 +819,7 @@ mod tests {
 		let result = entry.multiline_implicit_currency_conversion(
 			&mut imbalances,
 			&mut rates,
-			false,
+			&mut vec![],
 		);
 
 		assert!(result.is_ok());

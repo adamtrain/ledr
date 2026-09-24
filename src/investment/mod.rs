@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,4 +18,4 @@ pub mod action_buffer;
 pub mod commodity;
 pub mod lot;
 pub mod portfolio;
-mod sale;
+pub mod sale;

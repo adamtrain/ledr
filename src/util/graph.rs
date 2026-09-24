@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@ use crate::gl::observed_rate::{ObservationType, ObservedRate};
 use crate::util::amount::Amount;
 use crate::util::date::Date;
 use crate::util::quant::Quant;
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 #[derive(Debug)]
@@ -43,20 +43,11 @@ struct Rate {
 }
 
 impl Rate {
-	/// Reports a single rate to the caller, based on all underlying rate data.
-	/// Uses only the latest rates by observation date.
-	fn avg(&self) -> Quant {
-		let latest_date = self
-			.quant
-			.iter()
-			.zip(std::iter::repeat(self.observation_date))
-			.max_by_key(|&(_, date)| date)
-			.map(|(rate, _)| rate);
-
-		match latest_date {
-			Some(rate) => *rate,
-			None => unreachable!(),
-		}
+	/// Reports a single rate to the caller: the latest one observed. All
+	/// observations on an edge share its observation date, so this is the
+	/// last one recorded, i.e. the last conversion that day in the ledger.
+	fn latest(&self) -> Quant {
+		*self.quant.last().expect("rates always have an observation")
 	}
 }
 
@@ -108,8 +99,10 @@ impl Graph {
 		Ok(())
 	}
 
-	/// Overwrites any existing rate between the currencies, leaving only this
-	/// one, the most recent entry.
+	/// Records the rate between the currencies unless a rate from a later
+	/// date is already known. A rate from the same date is added alongside,
+	/// and the last one recorded wins. A rate from an earlier date is
+	/// replaced, leaving only the most recent.
 	pub fn overwrite_rate_if_newer(
 		&mut self,
 		date: &Date,
@@ -117,13 +110,13 @@ impl Graph {
 		b: &Amount,
 		observation_type: ObservationType,
 	) -> Result<(), Error> {
-		if let Some(existing_date) =
-			self.get_date_for_rate(&a.currency, &b.currency)
-		{
-			if &existing_date < date {
+		match self.get_date_for_rate(&a.currency, &b.currency) {
+			Some(existing) if existing > *date => {},
+			Some(existing) if existing < *date => {
 				self.remove_rate(&a.currency, &b.currency);
 				self.add_rate(date, a, b, observation_type)?;
-			}
+			},
+			_ => self.add_rate(date, a, b, observation_type)?,
 		}
 
 		Ok(())
@@ -157,21 +150,20 @@ impl Graph {
 	/// Does not traverse.
 	pub fn get_date_for_rate(&self, a: &String, b: &String) -> Option<Date> {
 		// we only need to check one as they are all symmetric
-		if let Some(node) = self.nodes.get(a) {
-			if let Some(rate) = node.edges.get(b) {
-				return Some(rate.observation_date);
-			}
+		if let Some(node) = self.nodes.get(a)
+			&& let Some(rate) = node.edges.get(b)
+		{
+			return Some(rate.observation_date);
 		}
 		None
 	}
 
 	/// Removes the given currency node and all edges to it.
 	pub fn remove_currency(&mut self, currency: &String) {
-		if let Some(node) = self.nodes.get_mut(currency) {
+		self.nodes.remove(currency);
+		for node in self.nodes.values_mut() {
 			node.edges.remove(currency);
 		}
-
-		self.nodes.remove(currency);
 	}
 
 	/// Removes edges between the given pair, if any exist, else no-op.
@@ -230,7 +222,7 @@ impl Graph {
 
 		if let Some(node) = self.nodes.get(current) {
 			for (neighbor, rate) in &node.edges {
-				let new_rate_product = rate_product * rate.avg();
+				let new_rate_product = rate_product * rate.latest();
 
 				if self.detect_inconsistent_cycle(
 					neighbor,
@@ -284,7 +276,7 @@ impl Graph {
 		{
 			if let Some(node) = self.nodes.get(&current_currency) {
 				for (neighbor, rate) in &node.edges {
-					let new_rate = current_rate * rate.avg();
+					let new_rate = current_rate * rate.latest();
 					let new_declared_count =
 						if rate.observation_type == ObservationType::Declared {
 							declared_count + 1
@@ -365,6 +357,33 @@ impl Graph {
 		))
 	}
 
+	/// The rate between two currencies along one shortest path, or None if
+	/// they are not connected. Unlike [`Graph::convert`], this doesn't
+	/// average every path, which in a large graph would take long and could
+	/// build fractions too large to represent.
+	pub fn convert_one(&self, base: &str, quote: &str) -> Option<Quant> {
+		if base == quote {
+			return Some(Quant::from_i128(1));
+		}
+		let mut seen: HashSet<&str> = HashSet::from([quote]);
+		let mut queue = VecDeque::from([(quote, Quant::from_i128(1))]);
+		while let Some((current, rate)) = queue.pop_front() {
+			let Some(node) = self.nodes.get(current) else {
+				continue;
+			};
+			for (neighbor, edge) in &node.edges {
+				let next = rate * edge.latest();
+				if neighbor == base {
+					return Some(next);
+				}
+				if seen.insert(neighbor) {
+					queue.push_back((neighbor, next));
+				}
+			}
+		}
+		None
+	}
+
 	/// Reports whether two currency nodes are adjacent. If they are, it will still report
 	/// false if must_be_declared is true and the given rate is not declared.
 	pub fn get_direct_rate(
@@ -386,7 +405,7 @@ impl Graph {
 			return None;
 		};
 
-		Some(rate.avg())
+		Some(rate.latest())
 	}
 
 	pub fn get_all_rates(&self) -> Vec<(String, String, ObservedRate)> {
@@ -397,8 +416,9 @@ impl Graph {
 
 		for (i, base) in currencies.iter().enumerate() {
 			for quote in currencies.iter().skip(i + 1) {
+				// Averaging paths can cancel out to zero, which is no rate
 				if let Some((rate, path_len, all_declared)) =
-					self.convert(base, quote)
+					self.convert(base, quote).filter(|(r, _, _)| !r.is_zero())
 				{
 					let observation_type = if all_declared {
 						ObservationType::Declared
@@ -411,7 +431,12 @@ impl Graph {
 					rates.push((
 						base.clone(),
 						quote.clone(),
-						ObservedRate::new(rate, self.date, observation_type),
+						ObservedRate::new(
+							rate,
+							self.date,
+							observation_type,
+							path_len == 1,
+						),
 					));
 					rates.push((
 						quote.clone(),
@@ -420,6 +445,7 @@ impl Graph {
 							rate.recip(),
 							self.date,
 							observation_type,
+							path_len == 1,
 						),
 					));
 				}
@@ -442,6 +468,33 @@ impl Node {
 mod tests {
 	use super::*;
 	use crate::util::quant::Quant;
+
+	#[test]
+	fn test_convert_one_follows_a_path() {
+		let mut graph = Graph::new_undated();
+		let date = Date::from_str("2024-11-12").unwrap();
+		let q = |n: i128, c: &str| Amount::new(Quant::from_i128(n), c);
+		graph
+			.add_rate(
+				&date,
+				&q(2, "USD"),
+				&q(1, "EUR"),
+				ObservationType::Inferred,
+			)
+			.unwrap();
+		graph
+			.add_rate(
+				&date,
+				&q(5, "EUR"),
+				&q(1, "GBP"),
+				ObservationType::Inferred,
+			)
+			.unwrap();
+		assert_eq!(graph.convert_one("USD", "GBP"), Some(Quant::new(1, 1)));
+		assert_eq!(graph.convert_one("GBP", "USD"), Some(Quant::from_i128(10)));
+		assert_eq!(graph.convert_one("USD", "JPY"), None);
+		assert_eq!(graph.convert_one("JPY", "JPY"), Some(Quant::from_i128(1)));
+	}
 
 	#[test]
 	fn test_direct_conversion() {

@@ -1,4 +1,4 @@
-/* Copyright © 2024-2026 Adam Train <adam@usdocument.org>
+/* Copyright © 2024-2026 Adam Train <adam@adametrain.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-use anyhow::{bail, Error};
+use anyhow::{Error, bail};
 use std::cmp::Ordering;
 use std::fmt;
 
@@ -27,6 +27,7 @@ pub struct Date {
 
 /// Contains the number of days between two dates, always in positive terms.
 /// Designed for convenient printing in human-readable terms.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Duration {
 	years: u32,
 	months: u8,
@@ -58,8 +59,94 @@ impl fmt::Display for Duration {
 	}
 }
 
+impl Duration {
+	pub fn total_days(&self) -> u32 {
+		self.total_days
+	}
+
+	/// Whole calendar years
+	pub fn years(&self) -> u32 {
+		self.years
+	}
+
+	/// Calendar years, months and days only, like `1y 2m 5d`
+	pub fn compact(&self) -> String {
+		let parts: Vec<String> = [
+			(self.years, 'y'),
+			(self.months as u32, 'm'),
+			(self.days as u32, 'd'),
+		]
+		.iter()
+		.filter(|(n, _)| *n > 0)
+		.map(|(n, unit)| format!("{n}{unit}"))
+		.collect();
+		if parts.is_empty() {
+			"0d".into()
+		} else {
+			parts.join(" ")
+		}
+	}
+}
+
 impl Date {
+	/// A date from its parts, if they make a real date
+	pub fn new(year: u32, month: u8, day: u8) -> Result<Date, Error> {
+		if !Date::is_valid_date(year, month, day) {
+			bail!("Invalid date");
+		}
+		Ok(Date { year, month, day })
+	}
+
+	pub fn year(&self) -> u32 {
+		self.year
+	}
+
+	pub fn month(&self) -> u8 {
+		self.month
+	}
+
+	pub fn day(&self) -> u8 {
+		self.day
+	}
+
+	/// Today, in the local time zone
+	pub fn today() -> Date {
+		Date::from_naive(chrono::Local::now().date_naive())
+	}
+
+	pub fn to_naive(self) -> chrono::NaiveDate {
+		chrono::NaiveDate::from_ymd_opt(
+			self.year as i32,
+			self.month as u32,
+			self.day as u32,
+		)
+		.expect("dates are always valid")
+	}
+
+	pub fn from_naive(date: chrono::NaiveDate) -> Date {
+		use chrono::Datelike;
+		Date {
+			year: date.year().max(1) as u32,
+			month: date.month() as u8,
+			day: date.day() as u8,
+		}
+	}
+
+	/// This date moved by a number of days, which may be negative
+	pub fn add_days(self, days: i64) -> Date {
+		Date::from_naive(self.to_naive() + chrono::Duration::days(days))
+	}
+
+	/// The last day of this date's month
+	pub fn end_of_month(self) -> Date {
+		Date {
+			day: Date::days_in_month(self.year, self.month),
+			..self
+		}
+	}
+
 	/// Constructor to parse a string in the "YYYY-mm-dd" format
+	#[allow(clippy::should_implement_trait)]
 	pub fn from_str(date_str: &str) -> Result<Date, Error> {
 		let parts: Vec<&str> = date_str.split('-').collect();
 		if parts.len() != 3 {
@@ -157,7 +244,7 @@ impl Date {
 			|| year.is_multiple_of(400)
 	}
 
-	fn days_in_month(year: u32, month: u8) -> u8 {
+	pub fn days_in_month(year: u32, month: u8) -> u8 {
 		match month {
 			1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
 			4 | 6 | 9 | 11 => 30,
@@ -180,6 +267,14 @@ impl Date {
 			return false;
 		}
 		true
+	}
+}
+
+impl std::str::FromStr for Date {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		Date::from_str(s)
 	}
 }
 
