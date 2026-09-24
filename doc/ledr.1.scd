@@ -22,11 +22,13 @@ writing entries, and (4) auxiliary functions. Each is described below in
 turn. All of these expect an input file in the _ledr_(5) format. A number of
 configuration options also exist to modify the display of reports.
 
-*ledr* only ever changes files when asked to: *ledr add* appends entries, and
-*ledr tidy --write* reformats files. Every other command only reads.
+*ledr* only ever changes files when asked to: *ledr init* creates a ledger
+and records where it is, *ledr add* appends entries, and *ledr tidy --write*
+reformats files. Every other command only reads.
 
 Run with no command, *ledr* shows an overview of the ledger: net worth, the
-last two months of income and spending, and the most recent entries.
+last two months of income and spending, and the most recent entries. With no
+ledger to read yet, it suggests *ledr init*.
 
 # OUTPUT
 
@@ -88,6 +90,37 @@ correctly interpret the proceeds from a given lot sale. For detailed discussion
 on this topic, consult _ledr_(7).
 
 # WRITING ENTRIES
+
+## ledr init [PATH]
+
+Starts a new ledger. In a terminal, *ledr* asks where to put it (suggesting
+_~/books/main.ledr_, and completing paths with tab), the main currency (guessed
+from the locale), and the date the books start, usually today. Then it asks
+for each account that holds money and what it held on that date, each debt and
+what was owed on it, and which income and expense categories to start with.
+Account names can be typed loosely: _emergency fund_ becomes
+_Assets:EmergencyFund_. Balances may be arithmetic and may name a currency; a
+_$_ means the main currency if that is a kind of dollar.
+
+The ledger has a declaration for each currency and account, all dated the day
+the books start, and one entry setting every opening balance against
+_Equity:OpeningBalances_. *ledr* checks it as it would any ledger, creates the
+file (and its folder, if need be), and saves its location in the config file
+described under FILES, so that *-f* is no longer needed.
+
+A _PATH_ that is a folder gets a _main.ledr_ in it. A file that already exists
+is never changed: *ledr* offers to make it the default ledger instead.
+
+*-y*, *--yes*
+	Ask nothing: start with the usual accounts and categories and no
+	balances. The main currency is the one given with *-c*, or else the
+	locale's. Also makes an existing file the default without asking.
+
+*-n*, *--dry-run*
+	Show the ledger, but create nothing.
+
+*--no-config*
+	Don't make it the default ledger.
 
 ## ledr add [WORDS...]
 
@@ -262,7 +295,8 @@ ways. This section lists all supported flags.
 ## -f <FILE> / --file <FILE>
 
 Specifies the input file, or _-_ to read the ledger from standard input.
-Required, unless the *LEDR_FILE* environment variable names one.
+Without it, *ledr* reads the file named by the *LEDR_FILE* environment
+variable, or else the one saved in the config file by *ledr init*.
 
 ## -b <DATE> / --begin <DATE>
 
@@ -379,6 +413,10 @@ e.g. *ledr add --help*.
 Prints the version of *ledr* that you have installed.
 
 # EXAMPLES
+
+Start a ledger, answering a few questions about what you have and owe:
+
+	ledr init
 
 Generate a balance sheet from a ledger file:
 
@@ -572,7 +610,8 @@ currency conversion
 # ENVIRONMENT
 
 *LEDR_FILE*
-	The ledger file to read when *-f* is not given.
+	The ledger file to read when *-f* is not given. It takes precedence over
+	the config file.
 
 *LEDR_PLAIN*
 	If set to anything but _0_, _false_ or _no_, output is plain unless
@@ -589,6 +628,13 @@ currency conversion
 *COLUMNS*
 	The width to lay out fancy output in, when it cannot be detected.
 
+*XDG_CONFIG_HOME*
+	Where the config file is kept, if set; see FILES.
+
+*LC_ALL*, *LC_MONETARY*, *LANG*
+	The first of these that is set is the locale *ledr init* guesses the
+	main currency from, e.g. _CAD_ for _en_CA.UTF-8_.
+
 # EXIT STATUS
 
 *ledr* exits 0 on success, and 1 if an error occurs, if *ledr check* finds
@@ -601,8 +647,18 @@ references.
 
 # FILES
 
-*ledr* does not use configuration files. All options are specified via
-command-line flags or the environment.
+_~/.config/ledr/config.toml_
+	Settings kept between runs, in TOML. It lives under *XDG_CONFIG_HOME*
+	instead if that is set. *ledr init* writes it, and there is one setting:
+
+	*file* = _PATH_
+		The ledger to read when neither *-f* nor *LEDR_FILE* is given. A
+		leading _~_ is the home directory, and a relative path is relative to
+		the config file.
+
+	*ledr init* changes only this setting, keeping any comments. Any other
+	setting is an error, shown with the line it's on, so a typo can't go
+	unnoticed. All other options are given as flags or in the environment.
 
 Ledger files conventionally use the _.ledr_ extension, though any file
 extension is accepted.

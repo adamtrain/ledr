@@ -49,9 +49,15 @@ on.
 - **`ledr add`**: add an entry interactively, with suggestions from history, fuzzy account
   completion and arithmetic, or from a few words (`ledr add coffee 4.50`). Entries are checked
   against the whole ledger before they are saved, and new accounts are declared automatically.
+- **`ledr init`**: start a ledger by answering a few questions: where to keep it, what each
+  account holds, what you owe, and which categories to start with. It writes the declarations
+  and an opening balances entry, and remembers the ledger in `~/.config/ledr/config.toml`, so
+  `-f` is no longer needed. It never replaces a file; given an existing ledger, it only makes it
+  the default.
 - **`ledr tidy`**: a formatter that aligns amounts on their decimal points and keeps every
   comment, with `--write` and `--check`.
-- **`ledr`** with no command shows an overview of the ledger.
+- **`ledr`** with no command shows an overview of the ledger, or with no ledger yet, how to start
+  one.
 - **`ledr check`** reports every problem at once, with suggestions for misspelled names and the
   declarations that would fix undeclared ones, and exits with failure on errors (and warnings,
   with `--strict`). It also warns when a conversion strays far from the rate declared that day.

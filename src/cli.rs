@@ -21,6 +21,7 @@ use clap::{Args, Parser, Subcommand};
 
 const EXAMPLES: &str = "\
 Examples:
+  ledr init                     Start a ledger, with your opening balances
   ledr bs                       Balance sheet (reads $LEDR_FILE)
   ledr -f books.ledr is -P 2024 Income statement for 2024
   ledr is -P last-month -i      Last month, income shown as positive
@@ -71,7 +72,8 @@ pub struct Cli {
 
 #[derive(Args, Debug, Clone)]
 pub struct Global {
-	/// Ledger file to read, or `-` for stdin
+	/// Ledger file to read, or `-` for stdin (default: the one `ledr init`
+	/// set up)
 	#[arg(short, long, env = "LEDR_FILE", global = true, value_name = "FILE")]
 	pub file: Option<String>,
 
@@ -139,6 +141,10 @@ pub struct Global {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
+	/// Start a new ledger, with your opening balances, and make it the one
+	/// ledr reads
+	Init(InitArgs),
+
 	/// Balance sheet: assets, liabilities and equity at a point in time
 	#[command(visible_alias = "balance")]
 	Bs,
@@ -226,6 +232,26 @@ pub struct AddArgs {
 }
 
 #[derive(Args, Debug)]
+pub struct InitArgs {
+	/// Where to create the ledger: a file, or a folder to put main.ledr in
+	/// (default: asked, suggesting ~/books/main.ledr)
+	pub path: Option<String>,
+
+	/// Don't ask; use the usual accounts, with no balances yet. The main
+	/// currency comes from -c, or else your locale.
+	#[arg(short, long)]
+	pub yes: bool,
+
+	/// Show the ledger, but don't create anything
+	#[arg(short = 'n', long)]
+	pub dry_run: bool,
+
+	/// Don't make it the ledger ledr reads by default
+	#[arg(long)]
+	pub no_config: bool,
+}
+
+#[derive(Args, Debug)]
 pub struct TidyArgs {
 	/// Rewrite the files in place (otherwise, show what would change)
 	#[arg(short, long, conflicts_with = "check")]
@@ -263,5 +289,16 @@ mod tests {
 		let cli =
 			Cli::try_parse_from(["ledr", "-f", "x", "as", "Assets:A"]).unwrap();
 		assert!(matches!(cli.command, Some(Command::As { .. })));
+	}
+
+	#[test]
+	fn test_init_takes_the_currency_from_the_global_flag() {
+		let cli = Cli::try_parse_from(["ledr", "init", "-c", "CAD", "--yes"])
+			.unwrap();
+		assert_eq!(cli.global.currency.as_deref(), Some("CAD"));
+		assert!(matches!(
+			cli.command,
+			Some(Command::Init(InitArgs { yes: true, .. }))
+		));
 	}
 }

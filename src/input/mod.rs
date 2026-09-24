@@ -23,3 +23,4 @@ pub mod fuzzy;
 pub mod history;
 pub mod interactive;
 pub mod quick;
+pub mod setup;

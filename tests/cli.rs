@@ -57,12 +57,28 @@ const LEDGER: &str = "\
 ";
 
 fn ledr(args: &[&str], env: &[(&str, &str)]) -> Output {
+	ledr_in(None, args, env)
+}
+
+/// Runs ledr, in `dir` if given, with `env` on top of a predictable
+/// environment
+fn ledr_in(dir: Option<&Path>, args: &[&str], env: &[(&str, &str)]) -> Output {
 	let mut command = Command::new(env!("CARGO_BIN_EXE_ledr"));
 	command
 		.args(args)
 		.env("NO_COLOR", "1")
 		.env("COLUMNS", "80")
-		.env_remove("LEDR_FILE");
+		.env_remove("LEDR_FILE")
+		.env_remove("LEDR_PLAIN")
+		// Never the config or locale of whoever runs the tests
+		.env("HOME", "/nonexistent/ledr-tests/home")
+		.env("XDG_CONFIG_HOME", "/nonexistent/ledr-tests/config")
+		.env_remove("LC_ALL")
+		.env_remove("LC_MONETARY")
+		.env("LANG", "en_US.UTF-8");
+	if let Some(dir) = dir {
+		command.current_dir(dir);
+	}
 	for (key, value) in env {
 		command.env(key, value);
 	}
@@ -569,4 +585,169 @@ fn test_account_balance_starts_from_earlier_entries() {
 		fancy.contains("Balance     2,700.00 USD"),
 		"includes the 200.00 before: {fancy}"
 	);
+}
+
+/// A home directory of its own, with nothing in it yet
+struct Home {
+	dir: tempfile::TempDir,
+}
+
+impl Home {
+	fn new() -> Self {
+		Self {
+			dir: tempfile::tempdir().unwrap(),
+		}
+	}
+
+	fn path(&self, relative: &str) -> std::path::PathBuf {
+		self.dir.path().join(relative)
+	}
+
+	/// Runs ledr from the home directory, with its config under it
+	fn run(&self, args: &[&str], env: &[(&str, &str)]) -> Output {
+		let home = self.dir.path().to_str().unwrap();
+		let mut all = vec![("HOME", home), ("XDG_CONFIG_HOME", "")];
+		all.extend_from_slice(env);
+		ledr_in(Some(self.dir.path()), args, &all)
+	}
+}
+
+#[test]
+fn test_init_creates_a_ledger_that_ledr_then_reads() {
+	let home = Home::new();
+	let output = home.run(&["init", "--yes", "-c", "EUR"], &[]);
+	assert!(output.status.success(), "{}", stderr(&output));
+	assert!(stdout(&output).contains("Created ~/books/main.ledr"));
+
+	let text = fs::read_to_string(home.path("books/main.ledr")).unwrap();
+	assert!(text.contains("currency EUR"));
+	assert!(text.contains("account Assets:Checking"));
+	assert!(text.contains("account Equity:OpeningBalances"));
+	let config =
+		fs::read_to_string(home.path(".config/ledr/config.toml")).unwrap();
+	assert!(config.contains("file = '~/books/main.ledr'"), "{config}");
+
+	// No -f needed from now on, and what init wrote is a sound ledger
+	let check = home.run(&["check", "--strict"], &[]);
+	assert!(check.status.success(), "{}", stderr(&check));
+	let add =
+		home.run(&["add", "groceries", "54.20", "@checking", "--yes"], &[]);
+	assert!(add.status.success(), "{}", stderr(&add));
+	let bs = home.run(&["bs"], &[]);
+	assert!(stdout(&bs).contains("EUR -54.20"), "{}", stdout(&bs));
+}
+
+#[test]
+fn test_init_follows_the_locale() {
+	let home = Home::new();
+	let output = home.run(&["init", "--yes"], &[("LANG", "en_CA.UTF-8")]);
+	assert!(output.status.success(), "{}", stderr(&output));
+	let text = fs::read_to_string(home.path("books/main.ledr")).unwrap();
+	assert!(text.contains("currency CAD"));
+	assert!(text.contains("account Assets:Chequing"));
+	// The example it suggests works on the new ledger
+	assert!(stdout(&output).contains("ledr add groceries 54.20 @creditcard"));
+	let add = home.run(
+		&["add", "groceries", "54.20", "@creditcard", "--dry-run"],
+		&[],
+	);
+	assert!(add.status.success(), "{}", stderr(&add));
+}
+
+#[test]
+fn test_init_dry_run_writes_nothing() {
+	let home = Home::new();
+	let output = home.run(&["init", "--dry-run", "books.ledr"], &[]);
+	assert!(output.status.success(), "{}", stderr(&output));
+	assert!(stdout(&output).contains("! "));
+	assert!(stdout(&output).contains("Dry run"));
+	assert!(!home.path("books.ledr").exists());
+	assert!(!home.path(".config").exists());
+}
+
+#[test]
+fn test_init_asks_for_a_terminal_or_yes() {
+	let home = Home::new();
+	let output = home.run(&["init"], &[]);
+	assert!(!output.status.success());
+	assert!(stderr(&output).contains("--yes"), "{}", stderr(&output));
+	assert!(!home.path("books").exists());
+}
+
+#[test]
+fn test_init_never_touches_an_existing_ledger() {
+	let home = Home::new();
+	fs::write(home.path("mine.ledr"), LEDGER).unwrap();
+	let output = home.run(&["init", "--yes", "mine.ledr"], &[]);
+	assert!(output.status.success(), "{}", stderr(&output));
+	assert!(stdout(&output).contains("already exists"));
+	assert!(stdout(&output).contains("a ledger of 5 entries"));
+	assert_eq!(fs::read_to_string(home.path("mine.ledr")).unwrap(), LEDGER);
+	// It became the default
+	let tb = home.run(&["tb"], &[]);
+	assert!(tb.status.success(), "{}", stderr(&tb));
+
+	// Something that isn't a ledger is refused, and left alone
+	fs::write(home.path("notes.txt"), "hello there\n").unwrap();
+	let output = home.run(&["init", "--yes", "notes.txt"], &[]);
+	assert!(!output.status.success());
+	assert!(stderr(&output).contains("couldn't read it as a ledger"));
+}
+
+#[test]
+fn test_init_a_folder_and_without_config() {
+	let home = Home::new();
+	fs::create_dir(home.path("money")).unwrap();
+	let output = home.run(&["init", "--yes", "--no-config", "money"], &[]);
+	assert!(output.status.success(), "{}", stderr(&output));
+	assert!(home.path("money/main.ledr").exists());
+	assert!(!home.path(".config").exists());
+	assert!(stdout(&output).contains("ledr -f ~/money/main.ledr add"));
+}
+
+#[test]
+fn test_config_problems_are_explained() {
+	let home = Home::new();
+	fs::create_dir_all(home.path(".config/ledr")).unwrap();
+	let config = home.path(".config/ledr/config.toml");
+
+	fs::write(&config, "# mine\nfiel = 'x.ledr'\n").unwrap();
+	let output = home.run(&["bs"], &[]);
+	assert!(!output.status.success());
+	let err = stderr(&output);
+	assert!(err.contains("config.toml:2:"), "{err}");
+	assert!(err.contains("unknown field `fiel`"), "{err}");
+
+	fs::write(&config, "file = '~/gone.ledr'\n").unwrap();
+	let output = home.run(&["bs"], &[]);
+	assert!(!output.status.success());
+	assert!(stderr(&output).contains("`~/gone.ledr`, doesn't exist"));
+	assert!(stderr(&output).contains("ledr init"));
+
+	// -f and LEDR_FILE come before the config
+	let (_dir, file) = ledger(LEDGER);
+	let output = home.run(&["tb"], &[("LEDR_FILE", &file)]);
+	assert!(output.status.success(), "{}", stderr(&output));
+}
+
+#[test]
+fn test_init_warns_when_ledr_file_would_win() {
+	let home = Home::new();
+	let (_dir, file) = ledger(LEDGER);
+	let output =
+		home.run(&["init", "--yes", "new.ledr"], &[("LEDR_FILE", &file)]);
+	assert!(output.status.success(), "{}", stderr(&output));
+	assert!(stdout(&output).contains("LEDR_FILE is set"));
+}
+
+#[test]
+fn test_welcome_without_a_ledger() {
+	let home = Home::new();
+	let fancy = home.run(&["--fancy"], &[]);
+	assert!(fancy.status.success());
+	assert!(stdout(&fancy).contains("ledr init"));
+	assert!(stdout(&fancy).contains('╭'));
+	// Plain output stays the usual help
+	let plain = home.run(&[], &[]);
+	assert!(stdout(&plain).contains("Usage:"));
 }

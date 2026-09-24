@@ -17,6 +17,7 @@
 //! Each report ledr can print: load the ledger, build the report's model,
 //! and render it plainly or fancily.
 
+use crate::config;
 use crate::diagnostics::{Diagnostic, Severity, closest};
 use crate::gl::entry::Entry;
 use crate::gl::total::Total;
@@ -24,9 +25,12 @@ use crate::input::compose::{self, Draft, Target};
 use crate::input::history::History;
 use crate::input::interactive;
 use crate::input::quick::{self, Quick};
+use crate::input::setup::{self, Setup};
 use crate::investment::lot::LotStatus;
 use crate::investment::portfolio::LotFilter;
-use crate::parsing::{LoadOptions, Loaded, load_ledger, loader};
+use crate::parsing::{
+	LoadOptions, Loaded, load_ledger, load_ledger_text, loader,
+};
 use crate::render::statement::{Heading, StatementKind};
 use crate::render::{self, Mode, dotted, gain_color, percent, plural};
 use crate::reports::portfolio_reporter::PortfolioReporter;
@@ -41,7 +45,7 @@ use crate::util::date::Date;
 use crate::util::period::parse_period;
 use crate::util::quant::Quant;
 use anyhow::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Everything the command line said about how to report.
 #[derive(Clone, Debug)]
@@ -682,6 +686,601 @@ pub fn add(
 	Ok(Output::text(saved.render(color) + "\n"))
 }
 
+/// What `ledr init` was asked to do
+pub struct InitRequest {
+	/// Where to create the ledger, if given
+	pub path: Option<String>,
+	/// Where to suggest creating it, e.g. from -f or LEDR_FILE
+	pub suggested: Option<String>,
+	/// The main currency, if given
+	pub currency: Option<String>,
+	/// Use the usual accounts rather than asking
+	pub yes: bool,
+	/// Show the ledger but create nothing
+	pub dry_run: bool,
+	/// Make it the ledger ledr reads by default
+	pub remember: bool,
+	/// Whether questions can be asked, i.e. there is a person at a terminal
+	pub interactive: bool,
+}
+
+/// What `ledr init` settled on
+enum Plan {
+	/// Create a ledger here, like this
+	New(PathBuf, Setup),
+	/// Use the ledger already here
+	Existing(PathBuf),
+}
+
+/// Starts a ledger: asks what someone has, owes and spends on, writes it
+/// with opening balances, and makes it the ledger ledr reads by default.
+/// A file that already exists is never touched, only offered as the
+/// default.
+pub fn init(
+	request: &InitRequest,
+	mode: Mode,
+	today: Date,
+) -> Result<Output, Error> {
+	let color = mode.color();
+	let asking = request.interactive && !request.yes;
+	if !asking && !request.yes && !request.dry_run {
+		return Err(Diagnostic::error(
+			"`ledr init` needs a terminal to ask questions",
+		)
+		.help(
+			"add --yes to start with the usual accounts, and add balances \
+			later",
+		)
+		.into());
+	}
+	let cancelled = || {
+		Output::text(
+			Line::faint("Cancelled. Nothing was written.").render(color) + "\n",
+		)
+	};
+
+	// Suggest the ledger ledr was told about, if it doesn't exist yet
+	let remembered = config::load(&mut SourceMap::new())
+		.ok()
+		.flatten()
+		.as_ref()
+		.and_then(config::ledger)
+		.filter(|f| !Path::new(f).exists());
+	let suggested = request
+		.suggested
+		.clone()
+		.filter(|f| f != "-")
+		.or(remembered)
+		.map_or_else(
+			|| setup::DEFAULT_PATH.to_string(),
+			|f| config::display(Path::new(&f)),
+		);
+
+	let planned = if asking {
+		interactive::style_prompts();
+		ask_plan(request, &suggested, mode, today)
+	} else {
+		usual_plan(request, &suggested, today)
+	};
+	let plan = match planned {
+		Ok(plan) => plan,
+		Err(e) if interactive::is_cancel(&e) => return Ok(cancelled()),
+		Err(e) => return Err(e),
+	};
+
+	let (path, setup) = match plan {
+		Plan::Existing(path) => return adopt(&path, request, asking, mode),
+		Plan::New(path, setup) => (path, setup),
+	};
+	let shown = config::display(&path);
+	let text = setup.to_text();
+
+	// Check it as any ledger is checked, before it exists
+	let mut sources = SourceMap::new();
+	let options = LoadOptions::new(path.to_string_lossy());
+	if let Err(error) =
+		load_ledger_text(&path, text.clone(), &options, &mut sources)
+	{
+		eprint!("{}", render::diagnostics::error(&error, &sources, mode));
+		return Ok(Output {
+			text: Line::faint("Nothing was written.").render(color) + "\n",
+			notice: None,
+			failed: true,
+		});
+	}
+
+	if request.dry_run {
+		let mut doc = Doc::new();
+		doc.push(
+			Line::styled("◇ ", Style::color(palette::ACCENT))
+				.with(shown, Style::color(palette::ACCENT).bold())
+				.with(" would hold:", Style::faint()),
+		);
+		doc.blank();
+		doc.extend(render::entries::highlight(&text));
+		doc.blank();
+		doc.push(Line::faint("Dry run: nothing was written."));
+		return Ok(Output::text(mode.render(&doc)));
+	}
+
+	if asking {
+		print!("{}", mode.render(&preview(&setup, mode)));
+	}
+	let confirmed = should_remember(&path, request, asking).and_then(|r| {
+		let create =
+			!asking || interactive::confirm(&format!("Create {shown}?"))?;
+		Ok((r, create))
+	});
+	let remember = match confirmed {
+		Ok((remember, true)) => remember,
+		Ok((_, false)) => return Ok(cancelled()),
+		Err(e) if interactive::is_cancel(&e) => return Ok(cancelled()),
+		Err(e) => return Err(e),
+	};
+
+	create_new(&path, &text)?;
+	let mut doc = Doc::new();
+	if asking {
+		doc.blank();
+	}
+	let names = setup.accounts.len() + setup.categories.len() + 1;
+	doc.push(
+		done("Created ")
+			.with(shown.clone(), Style::color(palette::ACCENT))
+			.with(
+				format!(" with {}", plural(names, "account")),
+				Style::faint(),
+			),
+	);
+	if remember {
+		doc.extend(remembered_lines(&path)?);
+	}
+	doc.blank();
+	doc.extend(next_steps(&shown, remember, &first_add(&setup)));
+	Ok(Output::text(mode.render(&doc)))
+}
+
+/// Asks everything about a new ledger, or for one that already exists
+fn ask_plan(
+	request: &InitRequest,
+	suggested: &str,
+	mode: Mode,
+	today: Date,
+) -> Result<Plan, Error> {
+	let color = mode.color();
+	let width = mode.width().min(72);
+	let intro = Doc::from(vec![
+		Line::styled("◆ ", Style::color(palette::ACCENT))
+			.with("Let's set up your books", Style::new().bold()),
+		Line::faint(
+			"  A few questions, then ledr writes a ledger to build on. Nothing",
+		),
+		Line::faint("  is written until the end, and esc stops at any point."),
+		Line::new(),
+	]);
+	print!("{}", intro.render(color));
+
+	let mut typed = request.path.clone();
+	let path = loop {
+		let answer = match typed.take() {
+			Some(path) => path,
+			None => interactive::ask_path(suggested)?,
+		};
+		let path = setup::resolve_path(&answer);
+		if !path.exists() {
+			if let Err(problem) = setup::check_new_path(&path) {
+				return Err(Diagnostic::error(problem).into());
+			}
+			break path;
+		}
+		let (about, readable) = match describe_ledger(&path) {
+			Ok(about) => (about, true),
+			Err(problem) => (
+				format!("ledr couldn't read it as a ledger: {problem}"),
+				false,
+			),
+		};
+		let question = format!(
+			"{} already exists. Use it as your ledger?",
+			config::display(&path)
+		);
+		if interactive::confirm_with(&question, readable, &about)? {
+			return Ok(Plan::Existing(path));
+		}
+	};
+
+	let locale = setup::locale();
+	let currency = match &request.currency {
+		Some(given) => setup::check_currency(given).map_err(Error::msg)?,
+		None => {
+			let guess = locale
+				.as_ref()
+				.and_then(|(name, region)| {
+					let code = setup::currency_for_region(region)?;
+					Some((code, format!("guessed from your locale, {name}")))
+				})
+				.unwrap_or((
+					"USD",
+					"the currency most of your money is in".to_string(),
+				));
+			interactive::ask_currency(guess.0, &guess.1)?
+		},
+	};
+	let date = interactive::ask_start(today)?;
+
+	let section = |title: &str, about: &str| {
+		let doc = Doc::from(vec![
+			Line::new(),
+			rule(title, width),
+			Line::faint(about),
+		]);
+		print!("{}", doc.render(color));
+	};
+	let region = locale.as_ref().map(|(_, region)| region.as_str());
+	let mut accounts = vec![];
+	section(
+		"Money you have",
+		"Bank accounts, savings, cash: anywhere you keep money.",
+	);
+	interactive::ask_openings(
+		"Assets",
+		setup::holdings(region),
+		&currency,
+		date,
+		&mut accounts,
+	)?;
+	section(
+		"Money you owe",
+		"Credit cards, loans, lines of credit, money borrowed from friends.",
+	);
+	interactive::ask_openings(
+		"Liabilities",
+		setup::DEBTS,
+		&currency,
+		date,
+		&mut accounts,
+	)?;
+	section(
+		"Categories",
+		"What you earn from and spend on. More can be added any time.",
+	);
+	let mut categories = interactive::ask_categories(
+		"Where does your money come from?",
+		"Income",
+		setup::INCOME,
+	)?;
+	categories.extend(interactive::ask_categories(
+		"What do you spend it on?",
+		"Expenses",
+		setup::EXPENSES,
+	)?);
+
+	Ok(Plan::New(
+		path,
+		Setup {
+			date,
+			currency,
+			accounts,
+			categories,
+		},
+	))
+}
+
+/// The usual ledger, or the one already there, without asking anything
+fn usual_plan(
+	request: &InitRequest,
+	suggested: &str,
+	today: Date,
+) -> Result<Plan, Error> {
+	let path =
+		setup::resolve_path(request.path.as_deref().unwrap_or(suggested));
+	if path.exists() {
+		return Ok(Plan::Existing(path));
+	}
+	setup::check_new_path(&path).map_err(Error::msg)?;
+	let locale = setup::locale();
+	let region = locale.as_ref().map(|(_, region)| region.as_str());
+	let currency = match &request.currency {
+		Some(given) => setup::check_currency(given).map_err(Error::msg)?,
+		None => region
+			.and_then(setup::currency_for_region)
+			.unwrap_or("USD")
+			.to_string(),
+	};
+	Ok(Plan::New(path, Setup::usual(today, &currency, region)))
+}
+
+/// A few words about an existing ledger, or why it can't be read
+fn describe_ledger(path: &Path) -> Result<String, String> {
+	let mut sources = SourceMap::new();
+	let loaded =
+		load_ledger(&LoadOptions::new(path.to_string_lossy()), &mut sources)
+			.map_err(|e| {
+				let message = format!("{e}");
+				message.lines().next().unwrap_or_default().to_string()
+			})?;
+	let history = History::build(&loaded.items);
+	Ok(match history.latest {
+		Some((_, latest)) => format!(
+			"a ledger of {}, the latest on {latest}",
+			plural(history.entries, "entry")
+		),
+		None => "a ledger with no entries yet".into(),
+	})
+}
+
+/// Makes an existing ledger the default, after saying what it is
+fn adopt(
+	path: &Path,
+	request: &InitRequest,
+	asking: bool,
+	mode: Mode,
+) -> Result<Output, Error> {
+	let shown = config::display(path);
+	let about = describe_ledger(path);
+	let mut doc = Doc::new();
+	if !asking {
+		doc.push(
+			Line::styled("◇ ", Style::color(palette::ACCENT))
+				.with(shown.clone(), Style::color(palette::ACCENT).bold())
+				.with(
+					" already exists, so it is left as it is",
+					Style::faint(),
+				),
+		);
+	}
+	if let Err(problem) = &about
+		&& !asking
+	{
+		return Err(Diagnostic::error(format!(
+			"`{shown}` exists, but ledr couldn't read it as a ledger: {problem}"
+		))
+		.help("choose another place for a new ledger, like `ledr init ~/books`")
+		.into());
+	}
+	if request.dry_run {
+		doc.push(Line::faint(if request.remember {
+			"Dry run: it wasn't made the default ledger."
+		} else {
+			"Dry run: nothing was changed."
+		}));
+		return Ok(Output::text(mode.render(&doc)));
+	}
+	let remember = match should_remember(path, request, asking) {
+		Ok(remember) => remember,
+		Err(e) if interactive::is_cancel(&e) => {
+			doc.push(Line::faint("Cancelled. Nothing was changed."));
+			return Ok(Output::text(mode.render(&doc)));
+		},
+		Err(e) => return Err(e),
+	};
+	if remember {
+		doc.extend(remembered_lines(path)?);
+		if let Ok(about) = about {
+			doc.push(Line::faint(format!("  It's {about}.")));
+		}
+	} else {
+		doc.push(Line::faint(
+			"Nothing was changed: ledr's default ledger is as it was.",
+		));
+	}
+	doc.blank();
+	doc.extend(next_steps(&shown, remember, "ledr add coffee 4.50"));
+	Ok(Output::text(mode.render(&doc)))
+}
+
+/// Whether to make `path` the default ledger, asking before replacing
+/// another
+fn should_remember(
+	path: &Path,
+	request: &InitRequest,
+	asking: bool,
+) -> Result<bool, Error> {
+	if !request.remember {
+		return Ok(false);
+	}
+	let current = config::load(&mut SourceMap::new())
+		.ok()
+		.flatten()
+		.as_ref()
+		.and_then(config::ledger)
+		.map(PathBuf::from);
+	match current {
+		Some(current) if asking && current != path && current.exists() => {
+			interactive::confirm_with(
+				&format!(
+					"ledr reads {} by default. Read {} instead?",
+					config::display(&current),
+					config::display(path)
+				),
+				true,
+				"you can still read either with -f",
+			)
+		},
+		_ => Ok(true),
+	}
+}
+
+/// Saves `path` as the default ledger, and says so
+fn remembered_lines(path: &Path) -> Result<Vec<Line>, Error> {
+	let config_path = config::remember(path)?;
+	let mut lines = vec![done("ledr will read it by default").with(
+		format!(" (see {})", config::display(&config_path)),
+		Style::faint(),
+	)];
+	// The environment wins over the config, which could be a surprise
+	if let Ok(env) = std::env::var("LEDR_FILE")
+		&& !env.is_empty()
+		&& setup::resolve_path(&env) != path
+	{
+		lines.push(Line::styled("⚠ ", Style::color(palette::AMBER)).with(
+			format!(
+				"LEDR_FILE is set to {env}, which ledr reads instead. \
+						Unset it, or set it to this ledger."
+			),
+			Style::new(),
+		));
+	}
+	Ok(lines)
+}
+
+/// Writes a new file, making its folder if need be, and never replacing
+/// anything
+fn create_new(path: &Path, text: &str) -> Result<(), Error> {
+	use std::io::Write;
+	let shown = config::display(path);
+	if let Some(dir) = path.parent() {
+		std::fs::create_dir_all(dir).map_err(|e| {
+			anyhow::anyhow!("Could not create `{}`: {e}", config::display(dir))
+		})?;
+	}
+	let mut file = std::fs::OpenOptions::new()
+		.write(true)
+		.create_new(true)
+		.open(path)
+		.map_err(|e| anyhow::anyhow!("Could not create `{shown}`: {e}"))?;
+	file.write_all(text.as_bytes())
+		.and_then(|_| file.sync_all())
+		.map_err(|e| anyhow::anyhow!("Could not write `{shown}`: {e}"))
+}
+
+fn done(text: &str) -> Line {
+	Line::styled("✓ ", Style::color(palette::GREEN).bold())
+		.with(text.to_string(), Style::new())
+}
+
+/// The new ledger in brief: its opening entry, what's declared, and what
+/// it all comes to
+fn preview(setup: &Setup, mode: Mode) -> Doc {
+	let mut doc = Doc::new();
+	doc.blank();
+	doc.push(rule("Your ledger", mode.width().min(72)));
+	if let Some(entry) = setup.opening() {
+		let text = entry.to_text(
+			&crate::tidy::FileStyle::default(),
+			&History::build(&[]),
+			&setup::decimals,
+		);
+		for line in render::entries::highlight(&text) {
+			doc.push(Line::plain("  ").then(line));
+		}
+		doc.blank();
+	}
+	let held = setup
+		.accounts
+		.iter()
+		.filter(|a| a.account.starts_with("Assets"))
+		.count();
+	let owed = setup.accounts.len() - held;
+	let counts: Vec<String> = [
+		(held, "account"),
+		(owed, "debt"),
+		(setup.categories.len(), "category"),
+	]
+	.into_iter()
+	.filter(|(n, _)| *n > 0)
+	.map(|(n, what)| plural(n, what))
+	.collect();
+	doc.push(
+		Line::styled("  ✚ ", Style::color(palette::ACCENT))
+			.then(dotted(&counts))
+			.with(format!(", all opened on {}", setup.date), Style::faint()),
+	);
+	let worth = setup.net_worth();
+	if !worth.is_empty() {
+		let mut line = Line::styled("  = ", Style::faint())
+			.with("Net worth ", Style::faint());
+		for (i, (currency, value)) in worth.iter().enumerate() {
+			if i > 0 {
+				line.push(" + ", Style::faint());
+			}
+			let shown =
+				compose::amount_text(*value, currency, &setup::decimals);
+			line.append(render::money(&shown, currency, value.is_negative()));
+		}
+		doc.push(line);
+	}
+	doc.blank();
+	doc
+}
+
+/// A quick `ledr add` that works on a new ledger, before it has any
+/// history to go by: a category named by the description, paid from a card
+/// if there is one, like `ledr add groceries 54.20 @visa`. Accounts it
+/// doesn't have are named in full, and would be added.
+fn first_add(setup: &Setup) -> String {
+	let last = |account: &str| {
+		account.rsplit(':').next().unwrap_or(account).to_lowercase()
+	};
+	let category = setup
+		.categories
+		.iter()
+		.find(|c| c.ends_with(":Groceries"))
+		.or_else(|| {
+			setup.categories.iter().find(|c| c.starts_with("Expenses:"))
+		})
+		.map_or_else(|| "coffee @Expenses:Coffee".to_string(), |c| last(c));
+
+	let is_card = |account: &str| {
+		let name = account.to_lowercase();
+		["card", "visa", "mastercard", "amex"]
+			.iter()
+			.any(|card| name.contains(card))
+	};
+	let accounts = || setup.accounts.iter().map(|a| a.account.as_str());
+	let paid = accounts()
+		.find(|a| a.starts_with("Liabilities:") && is_card(a))
+		.or_else(|| accounts().find(|a| a.starts_with("Assets:")))
+		.map_or_else(|| "Assets:Cash".to_string(), last);
+
+	let amount = if setup::decimals(&setup.currency) == 0 {
+		"5420"
+	} else {
+		"54.20"
+	};
+	format!("ledr add {category} {amount} @{paid}")
+}
+
+/// What to do with a ledger, new or not. `example` is a quick `ledr add`
+/// that will work on it. Unless it is the default ledger, every command
+/// names it.
+fn next_steps(shown: &str, remembered: bool, example: &str) -> Vec<Line> {
+	let ledr = if remembered {
+		"ledr".to_string()
+	} else {
+		format!("ledr -f {shown}")
+	};
+	let example = example.replacen("ledr", &ledr, 1);
+	let steps = [
+		(format!("{ledr} add"), "record what you spend and earn"),
+		(example, "or in a few words"),
+		(ledr.clone(), "see where things stand"),
+		(format!("{ledr} check"), "look for mistakes"),
+	];
+	let width = steps
+		.iter()
+		.map(|(c, _)| c.chars().count())
+		.max()
+		.unwrap_or(0);
+
+	let mut lines = vec![Line::styled("Next", Style::new().bold())];
+	for (command, what) in steps {
+		lines.push(
+			Line::plain("  ")
+				.with(
+					format!("{command:<width$}  "),
+					Style::color(palette::GREEN),
+				)
+				.with(what, Style::faint()),
+		);
+	}
+	lines.push(Line::new());
+	lines.push(Line::faint(
+		"It's plain text, so keep it in git for history and backups.",
+	));
+	lines
+}
+
 /// Formats every file of the ledger, showing or writing the changes
 pub fn tidy(
 	ctx: &Context,
@@ -906,10 +1505,14 @@ pub fn overview(
 ) -> Result<Output, Error> {
 	let mut loaded = ctx.load(sources)?;
 	let history = History::build(&loaded.items);
-	let Some(main) = history.main_currency().map(String::from) else {
-		return Ok(Output::text(
-			"The ledger has no entries yet. Add one with `ledr add`.\n".into(),
-		));
+	let main = match history.main_currency() {
+		Some(main) if history.entries > 0 => main.to_string(),
+		_ => {
+			return Ok(Output::text(
+				"The ledger has no entries yet. Add one with `ledr add`.\n"
+					.into(),
+			));
+		},
 	};
 	let precision = loaded
 		.result

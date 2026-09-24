@@ -16,6 +16,8 @@ make screenshots       # Regenerate docs/*.svg for the README (needs uv)
 
 Fancy layouts are snapshot-tested in `tests/cli.rs` against `tests/snapshots/`. After an
 intended layout change, run `LEDR_UPDATE_SNAPSHOTS=1 cargo test --test cli` and review the diff.
+CLI tests run with `HOME` and `XDG_CONFIG_HOME` pointing nowhere, so a developer's own config and
+locale never leak in; tests that need a config use `Home`, which gives each its own.
 Plain output is tested by the fixtures in `tests/test_data/`, run by `tests/integration_test.rs`;
 plain output is a stable format that scripts may depend on, so change it only deliberately.
 
@@ -29,6 +31,10 @@ plain output is a stable format that scripts may depend on, so change it only de
   together for each command, and `main.rs`/`cli.rs` are a thin shell around it.
 - Errors that concern ledger text are `diagnostics::Diagnostic`s with a `Span`, so they can be
   shown with their source lines. Warnings are collected on `Ledger::warnings`, never printed.
+- `config.rs` is the settings file, `~/.config/ledr/config.toml`, which only `ledr init` writes.
+  The ledger to read is `-f`, then `LEDR_FILE`, then the config (`ledger_file` in `main.rs`).
+  `input/setup.rs` models the new ledger `ledr init` writes; its prompts are in
+  `input/interactive.rs`, with those for `ledr add`.
 - `util/quant.rs` is exact rational arithmetic. Never convert money to floating point except for
   proportions in visual output (`Quant::to_f64`). It panics with `OVERFLOW_MESSAGE` rather than
   wrap; the binary turns that into a readable error.

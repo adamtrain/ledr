@@ -83,6 +83,9 @@ pub struct History {
 	pub payees: BTreeMap<String, Payee>,
 	pub declared_accounts: BTreeSet<String>,
 	pub declared_currencies: BTreeSet<String>,
+	/// The first currency declared, which stands in as the main currency
+	/// until any are used
+	first_declared_currency: Option<String>,
 	/// For each account, how often each currency was used with it
 	account_currencies: BTreeMap<String, BTreeMap<String, usize>>,
 	/// For each account, how often each other account appeared beside it
@@ -133,6 +136,9 @@ impl History {
 						history.declared_accounts.insert(a.clone());
 					},
 					Directive::Currency(c) => {
+						history
+							.first_declared_currency
+							.get_or_insert_with(|| c.clone());
 						history.declared_currencies.insert(c.clone());
 					},
 					_ => {},
@@ -224,12 +230,14 @@ impl History {
 			|| self.declared_currencies.contains(currency)
 	}
 
-	/// The currency most used overall
+	/// The currency most used overall, or if none has been used yet, the
+	/// first one declared
 	pub fn main_currency(&self) -> Option<&str> {
 		self.currencies
 			.iter()
 			.max_by_key(|(_, u)| u.count)
 			.map(|(c, _)| c.as_str())
+			.or(self.first_declared_currency.as_deref())
 	}
 
 	/// The currency most used with an account, else the main currency

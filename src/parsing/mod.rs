@@ -26,6 +26,7 @@ use crate::util::date::Date;
 use anyhow::Error;
 use loader::Overlay;
 use parser::ParseResult;
+use std::path::Path;
 
 /// Everything that decides how a ledger is read.
 #[derive(Clone, Debug)]
@@ -82,7 +83,24 @@ pub fn load_ledger(
 	sources: &mut SourceMap,
 ) -> Result<Loaded, Error> {
 	let items = loader::load(&options.file, sources, options.overlay.as_ref())?;
+	build(items, options)
+}
 
+/// Like [`load_ledger`], for text that isn't in a file yet, such as a new
+/// ledger about to be written to `path`
+pub fn load_ledger_text(
+	path: &Path,
+	text: String,
+	options: &LoadOptions,
+	sources: &mut SourceMap,
+) -> Result<Loaded, Error> {
+	build(loader::load_text(path, text, sources)?, options)
+}
+
+fn build(
+	items: Vec<loader::Item>,
+	options: &LoadOptions,
+) -> Result<Loaded, Error> {
 	let mut ledger = Ledger::new(options.lenient, options.thorough);
 	let result =
 		parser::build(&items, &mut ledger, &options.end, options.keep_going)?;

@@ -156,6 +156,12 @@ pub struct Doc {
 	pub lines: Vec<Line>,
 }
 
+impl From<Vec<Line>> for Doc {
+	fn from(lines: Vec<Line>) -> Self {
+		Self { lines }
+	}
+}
+
 impl Doc {
 	pub fn new() -> Self {
 		Self::default()

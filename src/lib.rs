@@ -29,6 +29,7 @@
 //! [`input`] and [`tidy`] go the other way, helping to write ledger text.
 
 pub mod commands;
+pub mod config;
 pub mod diagnostics;
 pub mod gl;
 pub mod input;

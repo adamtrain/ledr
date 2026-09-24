@@ -122,6 +122,30 @@ pub fn load(
 	}
 }
 
+/// Reads `text` as though it were the file at `path`, which need not exist
+/// yet, e.g. to check a new ledger before it is written
+pub fn load_text(
+	path: &Path,
+	text: String,
+	sources: &mut SourceMap,
+) -> Result<Vec<Item>, Error> {
+	let mut loader = Loader {
+		sources,
+		overlay: None,
+		stack: vec![],
+		seen: vec![],
+		items: vec![],
+		errors: vec![],
+		overlaid: false,
+	};
+	loader.add(path.to_path_buf(), None, text, None)?;
+	if loader.errors.is_empty() {
+		Ok(loader.items)
+	} else {
+		Err(Diagnostics(loader.errors).into())
+	}
+}
+
 /// Resolves an included path relative to the directory of the file that
 /// includes it. Absolute paths are left alone.
 pub fn resolve(including_file: &Path, included: &str) -> PathBuf {

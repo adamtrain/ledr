@@ -20,16 +20,20 @@ use anyhow::{Error, anyhow};
 use clap::{CommandFactory, Parser};
 use cli::{Cli, Command, Global};
 use ledr::commands::{self, Context, Output};
+use ledr::config;
 use ledr::diagnostics::Diagnostic;
 use ledr::parsing::LoadOptions;
 use ledr::render::statement::StatementKind;
 use ledr::render::{self, Mode};
 use ledr::syntax::source::SourceMap;
-use ledr::ui::style::{self, ColorLevel};
+use ledr::ui::style::{self, ColorLevel, Style, palette};
+use ledr::ui::text::{Doc, Line};
+use ledr::ui::widgets::{badge, panel};
 use ledr::util::date::Date;
 use ledr::util::period::{Edge, parse_bound, parse_period};
 use ledr::util::quant::OVERFLOW_MESSAGE;
 use std::io::{IsTerminal, Write};
+use std::path::Path;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -80,22 +84,53 @@ fn output_mode(global: &Global, is_terminal: bool) -> Mode {
 
 fn run(cli: Cli, mode: Mode, sources: &mut SourceMap) -> Result<Output, Error> {
 	let Some(command) = cli.command else {
-		// With a ledger to look at, show an overview; otherwise, help
-		if cli.global.file.is_some() {
-			let ctx = context(&cli.global, mode)?;
+		// With a ledger to look at, show an overview; otherwise, a welcome
+		if let Some(file) = ledger_file(&cli.global, sources)? {
+			let ctx = context(&cli.global, file, mode)?;
 			return commands::overview(&ctx, sources);
+		}
+		if mode.is_fancy() {
+			return Ok(plain_output(welcome(mode)));
 		}
 		Cli::command().print_help()?;
 		return Ok(plain_output(String::new()));
 	};
 
-	if let Command::Completions { shell } = command {
-		let mut out = vec![];
-		clap_complete::generate(shell, &mut Cli::command(), "ledr", &mut out);
-		return Ok(plain_output(String::from_utf8_lossy(&out).into_owned()));
+	match command {
+		Command::Completions { shell } => {
+			let mut out = vec![];
+			clap_complete::generate(
+				shell,
+				&mut Cli::command(),
+				"ledr",
+				&mut out,
+			);
+			return Ok(plain_output(
+				String::from_utf8_lossy(&out).into_owned(),
+			));
+		},
+		Command::Init(args) => {
+			let request = commands::InitRequest {
+				path: args.path,
+				suggested: cli.global.file.clone(),
+				currency: cli.global.currency.clone(),
+				yes: args.yes,
+				dry_run: args.dry_run,
+				remember: !args.no_config,
+				interactive: std::io::stdin().is_terminal()
+					&& std::io::stdout().is_terminal(),
+			};
+			return commands::init(&request, mode, Date::today());
+		},
+		_ => {},
 	}
 
-	let ctx = context(&cli.global, mode)?;
+	let file = ledger_file(&cli.global, sources)?.ok_or_else(|| {
+		Diagnostic::error("There's no ledger to read").help(
+			"start one with `ledr init`, or name one with -f FILE or LEDR_FILE",
+		)
+	})?;
+	let ctx = context(&cli.global, file, mode)?;
 	match command {
 		Command::Bs => {
 			commands::statement(&ctx, sources, StatementKind::Balance)
@@ -127,8 +162,64 @@ fn run(cli: Cli, mode: Mode, sources: &mut SourceMap) -> Result<Output, Error> {
 		},
 		Command::Accounts => commands::accounts(&ctx, sources),
 		Command::Payees => commands::payees(&ctx, sources),
-		Command::Completions { .. } => unreachable!(),
+		Command::Completions { .. } | Command::Init(_) => unreachable!(),
 	}
+}
+
+/// The ledger to read: from -f or LEDR_FILE, or else the one `ledr init`
+/// saved in the config
+fn ledger_file(
+	global: &Global,
+	sources: &mut SourceMap,
+) -> Result<Option<String>, Error> {
+	if let Some(file) = &global.file {
+		return Ok(Some(file.clone()));
+	}
+	let Some(file) = config::load(sources)?.as_ref().and_then(config::ledger)
+	else {
+		return Ok(None);
+	};
+	if !Path::new(&file).exists() {
+		let config_path = config::path().unwrap_or_default();
+		return Err(Diagnostic::error(format!(
+			"The ledger ledr reads by default, `{}`, doesn't exist",
+			config::display(Path::new(&file))
+		))
+		.help(format!(
+			"create it with `ledr init`, or change `file` in {}",
+			config::display(&config_path)
+		))
+		.into());
+	}
+	Ok(Some(file))
+}
+
+/// What `ledr` shows before there's a ledger
+fn welcome(mode: Mode) -> String {
+	let command = |text: &str, what: &str| {
+		Line::styled(format!("{text:<16}"), Style::color(palette::GREEN))
+			.with(what, Style::faint())
+	};
+	let body = vec![
+		badge("LEDR", palette::ACCENT).with(
+			"  Plain text accounting, with rock-solid math",
+			Style::faint(),
+		),
+		Line::new(),
+		Line::plain("There's no ledger to read yet."),
+		Line::new(),
+		command("ledr init", "start one, with your opening balances"),
+		command("ledr -f FILE", "read one you already have"),
+		command("ledr --help", "every command and option"),
+	];
+	let version = Line::faint(format!("v{}", env!("CARGO_PKG_VERSION")));
+	let doc = Doc::from(panel(
+		body,
+		palette::ACCENT,
+		Some(version),
+		mode.width().min(72),
+	));
+	mode.render(&doc)
 }
 
 fn plain_output(text: String) -> Output {
@@ -139,12 +230,11 @@ fn plain_output(text: String) -> Output {
 	}
 }
 
-fn context(global: &Global, mode: Mode) -> Result<Context, Error> {
-	let file = global.file.clone().ok_or_else(|| {
-		Diagnostic::error("No ledger file given")
-			.help("pass one with -f FILE, or set LEDR_FILE in your environment")
-	})?;
-
+fn context(
+	global: &Global,
+	file: String,
+	mode: Mode,
+) -> Result<Context, Error> {
 	let today = Date::today();
 	let date = |text: &Option<String>,
 	            edge: Edge,

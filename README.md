@@ -47,21 +47,21 @@ Or just `cargo install --path .` for the binary alone.
 
 ## Quick start
 
-Tell ledr where your books are, ideally in your shell profile, so you don't need `-f` every time:
+Start your books with `ledr init`. It asks where to keep them, what's in each of your accounts,
+what you owe, and which categories you spend on, then writes a ledger with those opening
+balances. From then on, ledr knows where your books are, so there's no `-f` to type.
 
 ```sh
-export LEDR_FILE=~/books/main.ledr
-```
-
-Then:
-
-```sh
-ledr                          # an overview: net worth, recent months, latest entries
+ledr init                     # set up a ledger, with your opening balances
 ledr add                      # add an entry, with suggestions
+ledr                          # an overview: net worth, recent months, latest entries
 ledr bs                       # balance sheet
 ledr is -P last-month -i      # last month's income statement, income as positive
 ledr check                    # find mistakes
 ```
+
+Already keep books? `ledr init path/to/books.ledr` makes an existing ledger the default without
+changing it. Or pass `-f`, or set `LEDR_FILE`, which take precedence.
 
 Want to try it first? There's a year of made-up finances in `examples/demo.ledr`:
 
@@ -160,7 +160,7 @@ declarations for new names, ready to paste.
 
 | Flag | |
 | --- | --- |
-| `-f, --file FILE` | The ledger to read (default: `$LEDR_FILE`; `-` reads stdin) |
+| `-f, --file FILE` | The ledger to read (default: `$LEDR_FILE`, else the one from `ledr init`; `-` reads stdin) |
 | `-b, --begin DATE` | Ignore entries before this date |
 | `-e, --end DATE` | Ignore entries after this date |
 | `-P, --period PERIOD` | One period instead: `2024`, `2024-03`, `2024-Q1`, `last-month`, `ytd`… |
@@ -206,6 +206,7 @@ made-up ledger in `examples/demo.ledr`; none of the numbers are real.
 src/
 ├── main.rs, cli.rs     # the command line
 ├── commands.rs         # what each command does
+├── config.rs           # settings kept between runs: which ledger to read
 ├── syntax/             # lexing ledger lines; source files and spans
 ├── parsing/            # reading files and includes; building the ledger
 ├── gl/                 # the general ledger: entries, balances, exchange rates
@@ -213,7 +214,8 @@ src/
 ├── reports/            # report models, and their plain rendering
 ├── render/             # fancy rendering of each report
 ├── ui/                 # colors, styled text, panels, bars and tables
-├── input/              # writing entries: history, fuzzy matching, quick and interactive add
+├── input/              # writing entries: history, fuzzy matching, quick and interactive add,
+│                       # and setting up a new ledger
 ├── tidy.rs             # the formatter
 ├── diagnostics.rs      # errors and warnings that know where they came from
 └── util/               # exact rational numbers, dates, periods, the rate graph

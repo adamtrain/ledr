@@ -42,8 +42,10 @@ clap = { version = "4.5.53", features = ["derive", "env", "wrap_help"] }
 clap_complete = "4.5"
 inquire = { version = "0.9.4", default-features = false, features = ["crossterm"] }
 regex = "1.12.2"
+serde = { version = "1", features = ["derive"] }
 similar = "3.2"
 terminal_size = "0.4"
+toml = { version = "0.9", default-features = false, features = ["parse", "serde", "std"] }
 unicode-width = "0.2"
 
 [dev-dependencies]
